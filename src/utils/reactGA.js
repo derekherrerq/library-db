@@ -1,4 +1,4 @@
-import ReactGA from 'react-ga';
+import ReactGA from 'react-ga4';
 
 const snap = navigator.userAgent !== 'ReactSnap';
 const isProd = process.env.REACT_APP_NODE_ENV === 'PROD';
