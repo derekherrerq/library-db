@@ -1,19 +1,27 @@
-require('dotenv').config();
-
+require('dotenv').config({ path: './test.env' });
+console.log('DB_USER:', process.env.DB_USER); 
 const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
-  host: 'library-db-library-db.i.aivencloud.com',
-  port: 28084,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: 'db'
+
 });
 
-connection.connect((err) => {
+// BorrowRecord, Employee, HoldRequest, ItemBook, ItemDevices, ItemMagazine, ItemMedia, Users
+
+const table = 'BorrowRecord';
+
+const sqlSelect = `SELECT * FROM ${table}`;
+connection.query(sqlSelect, (err, results) => {
   if (err) {
-    console.error('Database connection failed:', err.stack);
+    console.error(`Error executing query on ${table}:`, err.stack);
     return;
   }
-  console.log('Connected to database.');
+  console.log(`Query results from ${table}:`, results);
+
+  connection.end(err => {
+    if (err) {
+      return console.error('Error ending the connection:', err);
+    }
+    console.log('Connection Closed');
+  });
 });
