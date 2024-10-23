@@ -8,7 +8,7 @@ const connection = mysql.createConnection({
 
 // BorrowRecord, Employee, HoldRequest, ItemBook, ItemDevices, ItemMagazine, ItemMedia, Users
 
-const table = 'BorrowRecord';
+const table = 'ItemDevices';
 
 const sqlSelect = `SELECT * FROM ${table}`;
 connection.query(sqlSelect, (err, results) => {
