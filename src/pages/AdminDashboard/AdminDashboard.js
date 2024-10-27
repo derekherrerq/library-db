@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const USER_LIMITS = {
-  student: {
+  Student: {
     limit: 5,
-    duration: 7 
+    duration: 7,
   },
-  faculty: {
+  Faculty: {
     limit: 10,
-    duration: 14 
-  }
+    duration: 14,
+  },
+  // Add other roles if necessary
 };
 
 const itemFields = {
@@ -23,10 +24,7 @@ const itemFields = {
     { label: 'Due Date', key: 'DueDate', isDate: true },
     { label: 'Return Date', key: 'ReturnDate', isDate: true },
     { label: 'Fine Amount', key: 'FineAmount', isCurrency: true },
-    { label: 'Created At', key: 'CreatedAt', isDateTime: true },
-    { label: 'Created By', key: 'CreatedBy' },
-    { label: 'Last Updated', key: 'LastUpdated', isDateTime: true },
-    { label: 'Updated By', key: 'UpdatedBy' },
+    // 'CreatedAt', 'CreatedBy', 'LastUpdated', 'UpdatedBy' are handled automatically
   ],
   ItemBook: [
     { label: 'Book ID', key: 'BookID' },
@@ -72,14 +70,17 @@ const itemFields = {
 
 const AdminDashboard = () => {
   const [itemsData, setItemsData] = useState([]);
-  const [currentUserRole, setCurrentUserRole] = useState('student'); // Set a default role or get it from user context
+  const [currentUserRole, setCurrentUserRole] = useState('Student'); // Default role
   const [isRecordsVisible, setIsRecordsVisible] = useState(false);
   const [borrowLimitMessage, setBorrowLimitMessage] = useState('');
-  const [currentItemType, setCurrentItemType] = useState('BorrowRecord');
+  const [currentItemType, setCurrentItemType] = useState('ItemBook');
+
+  const [formData, setFormData] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
 
   const fetchItems = async (table) => {
     try {
-      const response = await fetch(`/api/pullAPI?table=${table}`); 
+      const response = await fetch(`/api/pullAPI?table=${table}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch ${table} data`);
       }
@@ -93,12 +94,16 @@ const AdminDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    fetchItems(currentItemType);
+  }, [currentItemType]);
+
   const toggleRecordsVisibility = () => {
     setIsRecordsVisible(!isRecordsVisible);
   };
 
   const canBorrowMoreItems = (userID) => {
-    const userRecords = itemsData.filter(record => record.UserID === userID);
+    const userRecords = itemsData.filter((record) => record.UserID === userID);
     return userRecords.length < USER_LIMITS[currentUserRole].limit;
   };
 
@@ -106,24 +111,43 @@ const AdminDashboard = () => {
     const durationDays = USER_LIMITS[currentUserRole].duration;
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + durationDays);
-    return dueDate.toISOString();
+    return dueDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
   };
 
   const borrowItem = async (itemID) => {
-    if (!canBorrowMoreItems(itemID)) {
+    // Replace 'UserID' and 'UserRole' with actual user context
+    const currentUserID = 'U001'; // Replace with actual user ID
+    const currentUserRole = 'Student'; // Replace with actual user role
+
+    if (!canBorrowMoreItems(currentUserID)) {
       alert(`Borrow limit reached for ${currentUserRole}.`);
       return;
     }
 
     const dueDate = getDueDate();
+
     const newRecord = {
-      UserID: itemID, 
+      BorrowRecordID: `BR${Date.now()}`, // Generate a unique ID
+      UserID: currentUserID,
+      BorrowDate: new Date().toISOString().split('T')[0],
       DueDate: dueDate,
+      ReturnDate: null,
+      FineAmount: 0,
     };
 
-    // Borrow Item API / WIP 
+    // Assign the appropriate item ID based on the current item type
+    if (currentItemType === 'ItemBook') {
+      newRecord.BookISBN = itemID;
+    } else if (currentItemType === 'ItemDevices') {
+      newRecord.DeviceID = itemID;
+    } else if (currentItemType === 'ItemMagazine') {
+      newRecord.MagID = itemID;
+    } else if (currentItemType === 'ItemMedia') {
+      newRecord.MediaID = itemID;
+    }
+
     try {
-      const response = await fetch('/api/borrow', {
+      const response = await fetch(`/api/pullAPI?table=BorrowRecord`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRecord),
@@ -143,9 +167,11 @@ const AdminDashboard = () => {
   };
 
   const checkBorrowLimits = () => {
-    const currentUserID = "replace_with_current_user_id"; // Replace with the actual user ID
+    const currentUserID = 'U001'; // Replace with actual user ID
     if (canBorrowMoreItems(currentUserID)) {
-      setBorrowLimitMessage(`You can borrow more items. Limit: ${USER_LIMITS[currentUserRole].limit}`);
+      setBorrowLimitMessage(
+        `You can borrow more items. Limit: ${USER_LIMITS[currentUserRole].limit}`
+      );
     } else {
       setBorrowLimitMessage(`You have reached your borrowing limit.`);
     }
@@ -154,6 +180,8 @@ const AdminDashboard = () => {
   const handleItemTypeChange = (itemType) => {
     setCurrentItemType(itemType);
     fetchItems(itemType);
+    setFormData({});
+    setIsEditing(false);
   };
 
   const renderItemDetails = (item) => {
@@ -162,7 +190,7 @@ const AdminDashboard = () => {
     return (
       <li key={item[fields[0].key]}>
         <h2>{currentItemType}</h2>
-        {fields.map(field => {
+        {fields.map((field) => {
           let value = item[field.key];
 
           if (field.isDate && value) {
@@ -184,8 +212,79 @@ const AdminDashboard = () => {
           );
         })}
         <button onClick={() => borrowItem(item[fields[0].key])}>Borrow Item</button>
+        <button onClick={() => handleEdit(item)}>Edit</button>
+        <button onClick={() => handleDelete(item[fields[0].key])}>Delete</button>
       </li>
     );
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleAddNew = () => {
+    setFormData({});
+    setIsEditing(false);
+  };
+
+  const handleEdit = (item) => {
+    setFormData(item);
+    setIsEditing(true);
+  };
+
+  const handleDelete = async (itemID) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/pullAPI?table=${currentItemType}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [itemFields[currentItemType][0].key]: itemID }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete item');
+      }
+      await response.json();
+      fetchItems(currentItemType);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      alert(error.message);
+    }
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const method = isEditing ? 'PUT' : 'POST';
+      const dataToSend = { ...formData };
+
+      // Process date fields
+      const fields = itemFields[currentItemType];
+      fields.forEach((field) => {
+        if (field.isDate && dataToSend[field.key]) {
+          // Ensure date is in 'YYYY-MM-DD' format
+          dataToSend[field.key] = dataToSend[field.key].split('T')[0];
+        }
+      });
+
+      const response = await fetch(`/api/pullAPI?table=${currentItemType}`, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSend),
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to ${isEditing ? 'update' : 'add'} item`);
+      }
+      await response.json();
+      fetchItems(currentItemType);
+      setFormData({});
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert(error.message);
+    }
   };
 
   return (
@@ -198,7 +297,7 @@ const AdminDashboard = () => {
       <button onClick={() => handleItemTypeChange('ItemMagazine')}>Magazines</button>
       <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
       <button onClick={checkBorrowLimits}>Check Borrow Limits</button>
-      
+
       {itemsData.length > 0 && (
         <button onClick={toggleRecordsVisibility}>
           {isRecordsVisible ? 'Hide Records' : 'Show Records'}
@@ -207,15 +306,37 @@ const AdminDashboard = () => {
 
       {isRecordsVisible && (
         <ul>
-          {itemsData.map(item => renderItemDetails(item))}
+          {itemsData.map((item) => renderItemDetails(item))}
         </ul>
       )}
 
       {!isRecordsVisible && itemsData.length > 0 && (
         <p>Records are hidden. Click "Show Records" to display them.</p>
       )}
-      
+
       <p>{borrowLimitMessage}</p>
+
+      {/* Form to add or edit items */}
+      <h2>{isEditing ? 'Edit' : 'Add New'} {currentItemType}</h2>
+      <form onSubmit={handleFormSubmit}>
+        {itemFields[currentItemType].map((field) => (
+          <div key={field.key}>
+            <label>
+              {field.label}:
+              <input
+                type={field.isDate ? 'date' : field.isCurrency ? 'number' : 'text'}
+                name={field.key}
+                value={formData[field.key] || ''}
+                onChange={handleInputChange}
+                required
+                disabled={isEditing && field.key === itemFields[currentItemType][0].key}
+              />
+            </label>
+          </div>
+        ))}
+        <button type="submit">{isEditing ? 'Update' : 'Add'}</button>
+        {isEditing && <button type="button" onClick={handleAddNew}>Cancel</button>}
+      </form>
     </div>
   );
 };
