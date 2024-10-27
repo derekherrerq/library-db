@@ -6,7 +6,7 @@ config({ path: './test.env' });
 
 // Create a MySQL connection
 const connectionConfig = {
- // hello there's clearly changes 
+   
 };
 
 // Define the API route
@@ -24,6 +24,6 @@ export default async function handler(req, res) {
     }
   } else {
     res.setHeader('Allow', ['GET']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    res.status(405).end(`Method ${req.method} Not Allowed`); // Enclosed in backticks
   }
 }
