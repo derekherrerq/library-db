@@ -11,22 +11,82 @@ const USER_LIMITS = {
   }
 };
 
-const AdminDashboard = () => {
-  const [borrowRecords, setBorrowRecords] = useState([]);
-  const [currentUserRole, setCurrentUserRole] = useState('student'); // Set a default role or get it from user context
-  const [isRecordsVisible, setIsRecordsVisible] = useState(false); // New state for toggling records visibility
-  const [borrowLimitMessage, setBorrowLimitMessage] = useState(''); // New state for borrow limit message
+const itemFields = {
+  BorrowRecord: [
+    { label: 'Borrow Record ID', key: 'BorrowRecordID' },
+    { label: 'User ID', key: 'UserID' },
+    { label: 'Book ISBN', key: 'BookISBN' },
+    { label: 'Device ID', key: 'DeviceID' },
+    { label: 'Magazine ID', key: 'MagID' },
+    { label: 'Media ID', key: 'MediaID' },
+    { label: 'Borrow Date', key: 'BorrowDate', isDate: true },
+    { label: 'Due Date', key: 'DueDate', isDate: true },
+    { label: 'Return Date', key: 'ReturnDate', isDate: true },
+    { label: 'Fine Amount', key: 'FineAmount', isCurrency: true },
+    { label: 'Created At', key: 'CreatedAt', isDateTime: true },
+    { label: 'Created By', key: 'CreatedBy' },
+    { label: 'Last Updated', key: 'LastUpdated', isDateTime: true },
+    { label: 'Updated By', key: 'UpdatedBy' },
+  ],
+  ItemBook: [
+    { label: 'Book ID', key: 'BookID' },
+    { label: 'ISBN', key: 'ISBN' },
+    { label: 'Title', key: 'Title' },
+    { label: 'Author', key: 'Author' },
+    { label: 'Genre', key: 'Genre' },
+    { label: 'Published Date', key: 'PublishedDate', isDate: true },
+    { label: 'Publisher', key: 'Publisher' },
+    { label: 'Cost', key: 'Cost', isCurrency: true },
+    { label: 'Availability', key: 'Availability' },
+  ],
+  ItemDevices: [
+    { label: 'Device ID', key: 'DeviceID' },
+    { label: 'Title', key: 'Title' },
+    { label: 'Brand', key: 'Brand' },
+    { label: 'Model', key: 'Model' },
+    { label: 'Warranty', key: 'Warranty', isDate: true },
+    { label: 'Publisher', key: 'Publisher' },
+    { label: 'Cost', key: 'Cost', isCurrency: true },
+    { label: 'Availability', key: 'Availability' },
+  ],
+  ItemMagazine: [
+    { label: 'Magazine ID', key: 'MagazineID' },
+    { label: 'ISSN', key: 'ISSN' },
+    { label: 'Title', key: 'Title' },
+    { label: 'Author', key: 'Author' },
+    { label: 'Publish Date', key: 'PublishDate', isDate: true },
+    { label: 'Publisher', key: 'Publisher' },
+    { label: 'Cost', key: 'Cost', isCurrency: true },
+    { label: 'Availability', key: 'Availability' },
+  ],
+  ItemMedia: [
+    { label: 'Media ID', key: 'MediaID' },
+    { label: 'Title', key: 'Title' },
+    { label: 'Media Type', key: 'MediaType' },
+    { label: 'Duration', key: 'Duration', isDuration: true },
+    { label: 'Director', key: 'Director' },
+    { label: 'Cost', key: 'Cost', isCurrency: true },
+    { label: 'Availability', key: 'Availability' },
+  ],
+};
 
-  const fetchBorrowRecords = async () => {
+const AdminDashboard = () => {
+  const [itemsData, setItemsData] = useState([]);
+  const [currentUserRole, setCurrentUserRole] = useState('student'); // Set a default role or get it from user context
+  const [isRecordsVisible, setIsRecordsVisible] = useState(false);
+  const [borrowLimitMessage, setBorrowLimitMessage] = useState('');
+  const [currentItemType, setCurrentItemType] = useState('BorrowRecord');
+
+  const fetchItems = async (table) => {
     try {
-      const response = await fetch('/api/pullAPI'); 
+      const response = await fetch(`/api/pullAPI?table=${table}`); 
       if (!response.ok) {
-        throw new Error('Failed to fetch borrow records');
+        throw new Error(`Failed to fetch ${table} data`);
       }
       const data = await response.json();
-      console.log('Fetched data:', data); // Log fetched data for debugging
-      setBorrowRecords(data);
-      setIsRecordsVisible(data.length > 0); // Show records if there's data
+      console.log(`Fetched ${table} data:`, data);
+      setItemsData(data);
+      setIsRecordsVisible(data.length > 0);
     } catch (error) {
       console.error('Error:', error);
       alert(error.message);
@@ -34,11 +94,11 @@ const AdminDashboard = () => {
   };
 
   const toggleRecordsVisibility = () => {
-    setIsRecordsVisible(!isRecordsVisible); // Toggle the fetch records
+    setIsRecordsVisible(!isRecordsVisible);
   };
 
   const canBorrowMoreItems = (userID) => {
-    const userRecords = borrowRecords.filter(record => record.UserID === userID);
+    const userRecords = itemsData.filter(record => record.UserID === userID);
     return userRecords.length < USER_LIMITS[currentUserRole].limit;
   };
 
@@ -75,7 +135,7 @@ const AdminDashboard = () => {
 
       const result = await response.json();
       console.log('Borrowed item successfully:', result);
-      fetchBorrowRecords(); // Refresh borrow records after borrowing
+      fetchItems(currentItemType); // Refresh items data after borrowing
     } catch (error) {
       console.error('Error borrowing item:', error);
       alert(error.message);
@@ -91,42 +151,71 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleItemTypeChange = (itemType) => {
+    setCurrentItemType(itemType);
+    fetchItems(itemType);
+  };
+
+  const renderItemDetails = (item) => {
+    const fields = itemFields[currentItemType];
+
+    return (
+      <li key={item[fields[0].key]}>
+        <h2>{currentItemType}</h2>
+        {fields.map(field => {
+          let value = item[field.key];
+
+          if (field.isDate && value) {
+            value = new Date(value).toLocaleDateString();
+          } else if (field.isDateTime && value) {
+            value = new Date(value).toLocaleString();
+          } else if (field.isCurrency && value !== null) {
+            value = `$${parseFloat(value).toFixed(2)}`;
+          } else if (field.isDuration && value !== null) {
+            value = `${value} minutes`;
+          } else {
+            value = value || 'N/A';
+          }
+
+          return (
+            <p key={field.key}>
+              <strong>{field.label}:</strong> {value}
+            </p>
+          );
+        })}
+        <button onClick={() => borrowItem(item[fields[0].key])}>Borrow Item</button>
+      </li>
+    );
+  };
+
   return (
     <div>
       <h1>Admin Dashboard</h1>
-      <button onClick={fetchBorrowRecords}>Fetch Borrow Records</button>
+      {/* Buttons to select the item type */}
+      <button onClick={() => handleItemTypeChange('BorrowRecord')}>Borrow Records</button>
+      <button onClick={() => handleItemTypeChange('ItemBook')}>Books</button>
+      <button onClick={() => handleItemTypeChange('ItemDevices')}>Devices</button>
+      <button onClick={() => handleItemTypeChange('ItemMagazine')}>Magazines</button>
+      <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
       <button onClick={checkBorrowLimits}>Check Borrow Limits</button>
-      {borrowRecords.length > 0 && (
+      
+      {itemsData.length > 0 && (
         <button onClick={toggleRecordsVisibility}>
-          {isRecordsVisible ? 'Hide Borrow Records' : 'Show Borrow Records'}
+          {isRecordsVisible ? 'Hide Records' : 'Show Records'}
         </button>
       )}
+
       {isRecordsVisible && (
         <ul>
-          {borrowRecords.map((record) => (
-            <li key={record.BorrowRecordID}>
-              <h2>Borrow Record</h2>
-              <p><strong>Borrow Record ID:</strong> {record.BorrowRecordID || 'N/A'}</p>
-              <p><strong>User ID:</strong> {record.UserID || 'N/A'}</p>
-              <p><strong>Book ISBN:</strong> {record.BookISBN || 'N/A'}</p>
-              <p><strong>Device ID:</strong> {record.DeviceID || 'N/A'}</p>
-              <p><strong>Magazine ID:</strong> {record.MagID || 'N/A'}</p>
-              <p><strong>Media ID:</strong> {record.MediaID || 'N/A'}</p>
-              <p><strong>Borrow Date:</strong> {record.BorrowDate ? new Date(record.BorrowDate).toLocaleString() : 'N/A'}</p>
-              <p><strong>Due Date:</strong> {record.DueDate ? new Date(record.DueDate).toLocaleString() : 'N/A'}</p>
-              <p><strong>Return Date:</strong> {record.ReturnDate ? new Date(record.ReturnDate).toLocaleString() : 'N/A'}</p>
-              <p><strong>Fine Amount:</strong> {record.FineAmount !== null ? `$${parseFloat(record.FineAmount).toFixed(2)}` : 'N/A'}</p>
-              <p><strong>Created At:</strong> {record.CreatedAt ? new Date(record.CreatedAt).toLocaleString() : 'N/A'}</p>
-              <p><strong>Created By:</strong> {record.CreatedBy || 'N/A'}</p>
-              <p><strong>Last Updated:</strong> {record.LastUpdated ? new Date(record.LastUpdated).toLocaleString() : 'N/A'}</p>
-              <p><strong>Updated By:</strong> {record.UpdatedBy || 'N/A'}</p>
-              <button onClick={() => borrowItem(record.UserID)}>Borrow Item</button>
-            </li>
-          ))}
+          {itemsData.map(item => renderItemDetails(item))}
         </ul>
       )}
-      {!isRecordsVisible && borrowRecords.length > 0 && <p>Borrow records are hidden. Click "Show Borrow Records" to display them.</p>}
-      <p>{borrowLimitMessage}</p> {/* Display borrow limit message */}
+
+      {!isRecordsVisible && itemsData.length > 0 && (
+        <p>Records are hidden. Click "Show Records" to display them.</p>
+      )}
+      
+      <p>{borrowLimitMessage}</p>
     </div>
   );
 };
