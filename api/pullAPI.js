@@ -6,7 +6,7 @@ config({ path: './test.env' });
 
 // Create a MySQL connection
 const connectionConfig = {
-   
+ 
 };
 
 // Define the API route
@@ -14,7 +14,6 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const connection = await mysql.createConnection(connectionConfig);
-      // Change the SQL query to select from BorrowRecord
       const [results] = await connection.execute('SELECT * FROM BorrowRecord');
       await connection.end();
       res.status(200).json(results);
