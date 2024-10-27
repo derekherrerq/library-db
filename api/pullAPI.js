@@ -20,6 +20,8 @@ const allowedTables = {
   ItemDevices: 'DeviceID',
   ItemMagazine: 'MagazineID',
   ItemMedia: 'MediaID',
+  Users: 'UserID',
+  Employee: 'EmployeeID',
 };
 
 // Date fields for each table
@@ -29,6 +31,8 @@ const dateFields = {
   ItemDevices: ['Warranty'],
   ItemMagazine: ['PublishDate'],
   ItemMedia: [],
+  Users: ['StartDate', 'Birthday'],
+  Employee: ['Birthday', 'HireDate'],
 };
 
 function isDateField(field, table) {

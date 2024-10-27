@@ -66,6 +66,43 @@ const itemFields = {
     { label: 'Cost', key: 'Cost', isCurrency: true },
     { label: 'Availability', key: 'Availability' },
   ],
+  Users: [
+    { label: 'User ID', key: 'UserID' },
+    { label: 'Role', key: 'Role' },
+    { label: 'First Name', key: 'FirstName' },
+    { label: 'Last Name', key: 'LastName' },
+    { label: 'Email', key: 'Email' },
+    { label: 'Phone Number', key: 'PhoneNumber' },
+    { label: 'Start Date', key: 'StartDate', isDate: true },
+    { label: 'Birthday', key: 'Birthday', isDate: true },
+    { label: 'Street Address', key: 'StreetAddress' },
+    { label: 'City', key: 'City' },
+    { label: 'State', key: 'State' },
+    { label: 'Zip Code', key: 'ZipCode' },
+    { label: 'Borrow Limit', key: 'BorrowLimit' },
+    { label: 'Balance', key: 'Balance', isCurrency: true },
+    { label: 'Suspended', key: 'Suspended' },
+  ],
+  Employee: [
+    { label: 'Employee ID', key: 'EmployeeID' },
+    { label: 'User ID', key: 'UserID' },
+    { label: 'First Name', key: 'FirstName' },
+    { label: 'Last Name', key: 'LastName' },
+    { label: 'Email', key: 'Email' },
+    { label: 'Phone Number', key: 'PhoneNumber' },
+    { label: 'Birthday', key: 'Birthday', isDate: true },
+    { label: 'Street Address', key: 'StreetAddress' },
+    { label: 'City', key: 'City' },
+    { label: 'State', key: 'State' },
+    { label: 'Zip Code', key: 'ZipCode' },
+    { label: 'Hire Date', key: 'HireDate', isDate: true },
+    { label: 'Role', key: 'role' },
+    { label: 'Department', key: 'Department' },
+    { label: 'Is Supervisor', key: 'is_supervisor' },
+    { label: 'Supervised By Name', key: 'supervised_by_name' },
+    { label: 'Supervised By Employee ID', key: 'supervised_by_employee_id' },
+    { label: 'Fine Amount', key: 'FineAmount', isCurrency: true },
+  ],
 };
 
 const AdminDashboard = () => {
@@ -144,6 +181,10 @@ const AdminDashboard = () => {
       newRecord.MagID = itemID;
     } else if (currentItemType === 'ItemMedia') {
       newRecord.MediaID = itemID;
+    } else {
+      // For Users and Employee tables, borrowing items is not applicable
+      alert('Cannot borrow items from this table.');
+      return;
     }
 
     try {
@@ -202,7 +243,7 @@ const AdminDashboard = () => {
           } else if (field.isDuration && value !== null) {
             value = `${value} minutes`;
           } else {
-            value = value || 'N/A';
+            value = value !== null && value !== undefined ? value : 'N/A';
           }
 
           return (
@@ -211,7 +252,9 @@ const AdminDashboard = () => {
             </p>
           );
         })}
-        <button onClick={() => borrowItem(item[fields[0].key])}>Borrow Item</button>
+        {['ItemBook', 'ItemDevices', 'ItemMagazine', 'ItemMedia'].includes(currentItemType) && (
+          <button onClick={() => borrowItem(item[fields[0].key])}>Borrow Item</button>
+        )}
         <button onClick={() => handleEdit(item)}>Edit</button>
         <button onClick={() => handleDelete(item[fields[0].key])}>Delete</button>
       </li>
@@ -296,6 +339,8 @@ const AdminDashboard = () => {
       <button onClick={() => handleItemTypeChange('ItemDevices')}>Devices</button>
       <button onClick={() => handleItemTypeChange('ItemMagazine')}>Magazines</button>
       <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
+      <button onClick={() => handleItemTypeChange('Users')}>Users</button>
+      <button onClick={() => handleItemTypeChange('Employee')}>Employee</button>
       <button onClick={checkBorrowLimits}>Check Borrow Limits</button>
 
       {itemsData.length > 0 && (
@@ -324,7 +369,15 @@ const AdminDashboard = () => {
             <label>
               {field.label}:
               <input
-                type={field.isDate ? 'date' : field.isCurrency ? 'number' : 'text'}
+                type={
+                  field.isDate
+                    ? 'date'
+                    : field.isCurrency
+                    ? 'number'
+                    : field.key.toLowerCase().includes('email')
+                    ? 'email'
+                    : 'text'
+                }
                 name={field.key}
                 value={formData[field.key] || ''}
                 onChange={handleInputChange}
