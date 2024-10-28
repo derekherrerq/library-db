@@ -1,0 +1,15 @@
+// pages/index.js
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+
+function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/SearchPage');
+  }, []);
+
+  return null;
+}
+
+export default Home;
