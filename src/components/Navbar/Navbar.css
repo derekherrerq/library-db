@@ -1,0 +1,115 @@
+/* src/components/Navbar/Navbar.css */
+
+/* Reset default margins and paddings */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+  }
+  
+  /* Style for the brand text */
+  .brand-text {
+	font-size: 1.5rem; /* Larger font size for prominence */
+	font-weight: bold;
+	color: #333333; /* Dark text color */
+  }
+  
+  /* Main navbar styling */
+  .main-nav {
+	background-color: #ffffff; /* White background */
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+	padding: 0.5rem 1rem; /* Vertical and horizontal padding */
+	position: fixed; /* Fixes the navbar to the top */
+	top: 0;
+	width: 100%; /* Full width */
+	height: 60px; /* Fixed height */
+	z-index: 1000; /* Ensures navbar stays above other elements */
+	display: flex;
+	align-items: center; /* Vertically centers content */
+  }
+  
+  /* Ensure the navbar expands properly */
+  .main-nav .navbar-collapse {
+	justify-content: flex-end; /* Aligns nav items to the right */
+  }
+  
+  /* Style for navigation links */
+  .navbar-light .navbar-nav .nav-link {
+	color: #333333; /* Dark text color */
+	font-weight: 500;
+	margin-left: 1rem;
+	transition: color 0.3s ease;
+  }
+  
+  .navbar-light .navbar-nav .nav-link:hover,
+  .navbar-light .navbar-nav .nav-link.active {
+	color: #007bff; /* Blue color on hover and active */
+  }
+  
+  /* Style for the toggle (hamburger) icon */
+  .navbar-toggler {
+	border: none;
+  }
+  
+  .navbar-toggler:focus {
+	outline: none;
+  }
+  
+  .navbar-toggler .fas {
+	color: #333333; /* Icon color */
+  }
+  
+  /* Style for the login/logout button */
+  .main-nav .button {
+	background-color: #007bff; /* Blue background */
+	color: #ffffff; /* White text */
+	border: none;
+	border-radius: 5px;
+	padding: 8px 20px;
+	font-size: 16px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.3s ease;
+  }
+  
+  .main-nav .button:hover {
+	background-color: #0056b3; /* Darker blue on hover */
+  }
+  
+  /* Remove logo-specific styles */
+  .App-logo {
+	display: none;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 992px) {
+	.brand-text {
+	  font-size: 1.3rem; /* Slightly smaller on tablets */
+	}
+  
+	.navbar-light .navbar-nav .nav-link {
+	  margin-left: 0.5rem;
+	  font-size: 14px;
+	}
+  
+	.main-nav .button {
+	  padding: 6px 16px;
+	  font-size: 14px;
+	}
+  }
+  
+  @media (max-width: 576px) {
+	.brand-text {
+	  font-size: 1.2rem; /* Smaller on mobile devices */
+	}
+  
+	.navbar-light .navbar-nav .nav-link {
+	  margin-left: 0.3rem;
+	  font-size: 12px;
+	}
+  
+	.main-nav .button {
+	  padding: 5px 12px;
+	  font-size: 12px;
+	}
+  }  
