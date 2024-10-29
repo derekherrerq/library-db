@@ -69,7 +69,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'User ID is required.' });
         }
 
-        // Generate new BorrowRecordID
+        // Create new BorrowRecordID
         generateBorrowRecordID((error, newBorrowRecordID) => {
             if (error) {
                 return res.status(500).json({ message: 'Error generating BorrowRecordID.' });
@@ -111,16 +111,16 @@ export default async function handler(req, res) {
                 newBorrowRecordID,
                 userID,
                 bookISBN || null,  // Set to null if not provided
-                deviceID || null,  // Set to null if not provided
-                magID || null,     // Set to null if not provided
-                mediaID || null,   // Set to null if not provided
+                deviceID || null,  
+                magID || null,     
+                mediaID || null,   
                 formattedBorrowDate, // Use formatted date for borrow date
-                formattedDueDate, // Use formatted date for due date
-                formattedReturnDate, // Use formatted date for return date (same as due date)
+                formattedDueDate, 
+                formattedReturnDate, //  return date (same as due date)
                 0, // FineAmount set to 0
                 'user', // CreatedBy set to 'user'
-                createdAt, // Use formatted createdAt date
-                lastUpdated, // Use formatted lastUpdated date
+                createdAt, 
+                lastUpdated,
                 'user' // UpdatedBy set to 'user'
             ], (error, results) => {
                 if (error) {
@@ -131,7 +131,6 @@ export default async function handler(req, res) {
             });
         });
     } else {
-        // Handle any other HTTP methods
         res.setHeader('Allow', ['POST']);
         res.status(405).end(`Method ${req.method} Not Allowed`);
     }
