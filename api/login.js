@@ -1,23 +1,27 @@
+// api/login.js
 export default function handler(req, res) {
   if (req.method === 'POST') {
     const { username, password } = req.body;
 
-    // Dummy user data with roles
+    // Updated user data with UserIDs
     const users = [
       {
         username: 'normaluser',
         password: 'password123',
         role: 'user', // Normal User
+        userID: 'U001',
       },
       {
         username: 'staffuser',
         password: 'password123',
         role: 'staff', // Staff User
+        userID: 'U002',
       },
       {
         username: 'adminuser',
         password: 'password123',
         role: 'admin', // Admin User
+        userID: 'U004',
       },
     ];
 
@@ -33,6 +37,7 @@ export default function handler(req, res) {
         message: 'Logged in successfully',
         token: 'fake-jwt-token', // Replace with real token
         role: user.role, // Include user role
+        userID: user.userID, // Include UserID
       });
     } else {
       // Authentication failed

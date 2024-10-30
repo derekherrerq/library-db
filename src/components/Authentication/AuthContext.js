@@ -8,17 +8,20 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: false,
     token: null,
     role: null,
+    userID: null, // Add userID to authState
   });
 
-  const login = (token, role) => {
+  const login = (token, role, userID) => { // Add userID parameter
     setAuthState({
       isAuthenticated: true,
       token: token,
       role: role,
+      userID: userID, // Set userID in state
     });
-    // Optionally, store token and role in localStorage
+    // Optionally, store token, role, and userID in localStorage
     localStorage.setItem('token', token);
     localStorage.setItem('role', role);
+    localStorage.setItem('userID', userID);
   };
 
   const logout = () => {
@@ -26,10 +29,12 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated: false,
       token: null,
       role: null,
+      userID: null, // Reset userID
     });
-    // Remove token and role from localStorage
+    // Remove token, role, and userID from localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('userID');
   };
 
   return (
