@@ -1,4 +1,3 @@
-// src/components/Navbar/Navbar.js
 import React, { useContext } from 'react';
 import { Nav, Navbar } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
@@ -29,9 +28,10 @@ const NavBar = () => {
       </Navbar.Toggle>
       <Navbar.Collapse id='responsive-navbar-nav'>
         <Nav className='ml-auto'>
-          <ActiveListItem url='/' name='Home' />
           {isAuthenticated ? (
             <>
+              <ActiveListItem url='/' name='Home' />
+              <ActiveListItem url='/search' name='Search' />
               {role === 'admin' && (
                 <ActiveListItem url='/admin-dashboard' name='Admin Dashboard' />
               )}
@@ -44,11 +44,13 @@ const NavBar = () => {
               </Nav.Link>
             </>
           ) : (
-            <LinkContainer to='/login'>
-              <Nav.Link>
-                <button className='button'>Login</button>
-              </Nav.Link>
-            </LinkContainer>
+            <>
+              <LinkContainer to='/login'>
+                <Nav.Link>
+                  <button className='button'>Login</button>
+                </Nav.Link>
+              </LinkContainer>
+            </>
           )}
         </Nav>
       </Navbar.Collapse>

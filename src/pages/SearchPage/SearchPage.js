@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import SearchResultsComponent from './SearchResultsComponent';
+import SearchResultsComponent from '../../components/SearchResults/searchResultsComponent';
 
 function SearchPage() {
   const [itemType, setItemType] = useState('Book');
