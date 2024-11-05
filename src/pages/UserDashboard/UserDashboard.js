@@ -1,25 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../../components/Authentication/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-const UserDashboard = () => {
+function UserDashboard() {
+  const { userID } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const [itemID, setItemID] = useState('');
-  const [userID, setUserID] = useState('');
   const [bookISBN, setBookISBN] = useState('');
   const [deviceID, setDeviceID] = useState('');
   const [magID, setMagID] = useState('');
   const [mediaID, setMediaID] = useState('');
   const [message, setMessage] = useState('');
+  const [balance, setBalance] = useState(null);
+
+  // Fetch the user's balance when the component mounts
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!userID) {
+        // User is not logged in, redirect to login page
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/getBalance', {
+          method: 'GET',
+          headers: {
+            'x-user-id': userID, // Send userID in custom header
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          console.log('Fetched balance:', data.balance, 'Type:', typeof data.balance);
+          const numericBalance = parseFloat(data.balance);
+          setBalance(numericBalance);
+        } else {
+          setMessage(data.message || 'Failed to fetch balance');
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+        setMessage('An error occurred while fetching balance');
+      }
+    };
+
+    fetchBalance();
+  }, [userID, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const response = await fetch('http://localhost:3000/api/hold', {
+    if (!userID) {
+      setMessage('User not logged in');
+      return;
+    }
+
+    const response = await fetch('/api/hold', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-user-id': userID, // Send userID in custom header
       },
       body: JSON.stringify({
         itemID,
-        userID,
         bookISBN,
         deviceID,
         magID,
@@ -35,7 +80,6 @@ const UserDashboard = () => {
 
     // Clear the form fields
     setItemID('');
-    setUserID('');
     setBookISBN('');
     setDeviceID('');
     setMagID('');
@@ -45,8 +89,16 @@ const UserDashboard = () => {
   return (
     <div>
       <h1>User Dashboard</h1>
-      <p>Welcome, Normal User!</p>
-      
+      <p>Welcome, User ID: {userID}</p>
+
+      {balance !== null && !isNaN(balance) && (
+        <div>
+          <p>Your Current Balance: ${balance.toFixed(2)}</p>
+        </div>
+      )}
+
+      {message && <p>{message}</p>}
+
       <form onSubmit={handleSubmit}>
         <div>
           <label>
@@ -59,17 +111,9 @@ const UserDashboard = () => {
             />
           </label>
         </div>
-        <div>
-          <label>
-            User ID:
-            <input
-              type="text"
-              value={userID}
-              onChange={(e) => setUserID(e.target.value)}
-              required
-            />
-          </label>
-        </div>
+        {/* UserID input can be hidden or removed since it's fetched */}
+        <input type="hidden" value={userID} />
+
         <div>
           <label>
             Book ISBN:
@@ -112,10 +156,8 @@ const UserDashboard = () => {
         </div>
         <button type="submit">Request/Hold Item</button>
       </form>
-
-      {message && <p>{message}</p>}
     </div>
   );
-};
+}
 
 export default UserDashboard;

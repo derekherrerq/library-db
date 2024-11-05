@@ -1,4 +1,3 @@
-// src/pages/Login.js
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../components/Authentication/AuthContext';
@@ -19,7 +18,7 @@ function Login() {
 
     try {
       // Send login request to the backend
-      const response = await fetch('/api/login', { // Updated fetch URL
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -28,8 +27,11 @@ function Login() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Update authentication state with role
-        login(data.token, data.role);
+        // Update authentication state with token, role, and userID
+        login(data.token, data.role, data.userID); // Pass userID to login
+
+        // Remove localStorage setting if not needed
+        // localStorage.setItem('userID', data.userID); // Optional: Remove this line
 
         // Redirect based on role
         if (data.role === 'admin') {
