@@ -7,17 +7,14 @@ function Login() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // State variables for form inputs and error message
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // Send login request to the backend
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -27,13 +24,8 @@ function Login() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Update authentication state with token, role, and userID
-        login(data.token, data.role, data.userID); // Pass userID to login
+        login(data.token, data.role, data.userID);
 
-        // Remove localStorage setting if not needed
-        // localStorage.setItem('userID', data.userID); // Optional: Remove this line
-
-        // Redirect based on role
         if (data.role === 'admin') {
           navigate('/admin-dashboard');
         } else if (data.role === 'staff') {
@@ -45,9 +37,13 @@ function Login() {
         setErrorMessage(data.message || 'Login failed');
       }
     } catch (error) {
-      console.error('Login error:', error); // For debugging
+      console.error('Login error:', error);
       setErrorMessage('An error occurred during login.');
     }
+  };
+
+  const handleRegistrationClick = () => {
+    navigate('/register');
   };
 
   return (
@@ -74,6 +70,9 @@ function Login() {
           />
         </div>
         <button type="submit">Login</button>
+        <p className="registration-text" onClick={handleRegistrationClick}>
+          Don’t have an account? <span>Register here</span>
+        </p>
       </form>
     </div>
   );

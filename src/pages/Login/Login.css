@@ -1,12 +1,10 @@
-/* src/pages/Login.css */
-
-/* Style for the entire login page container */
 .login-container {
 	display: flex;
 	justify-content: center; /* Center horizontally */
 	align-items: center;    /* Center vertically */
 	height: 100vh;          /* Full viewport height */
 	background-color: #f0f2f5; /* Light background color */
+	margin-top: 60px;
   }
   
   /* Style for the login form box */
@@ -82,4 +80,19 @@
 	  transform: translateY(0px) scale(1);
 	}
   }
+
+  .registration-text {
+	margin-top: 15px;
+	text-align: center;
+	font-size: 0.9em;
+	color: #007bff; /* Hyperlink color */
+	cursor: pointer;
+  }
   
+  .registration-text span {
+	text-decoration: underline;
+  }
+  
+  .registration-text:hover span {
+	color: #0056b3; /* Darker color on hover */
+  }  

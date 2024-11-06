@@ -1,0 +1,91 @@
+/* Style for the entire registration page container */
+.registration-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;          /* Added padding to prevent overflow */
+    background-color: #f0f2f5;
+    box-sizing: border-box; /* Ensure padding doesn't cause overflow */
+    margin-top: 60px;
+    padding-top: var(--navbar-height); /* Space for the fixed navbar */
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
+     padding-bottom: 20px; /* Optional: Space at the bottom */
+    height: 100vh; /* Full viewport height to allow scrolling within this area */
+  }
+  
+  .registration-form {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;       /* Limit the form width */
+    display: flex;
+    flex-direction: column;
+    animation: fade-up 0.5s ease-out;
+    box-sizing: border-box; /* Ensure padding doesn't affect width */
+  }
+  
+  .form-control {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+  }
+  
+  .form-control label {
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333333;
+  }
+  
+  .form-control input {
+    padding: 10px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  .form-control input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+  
+  .registration-form button {
+    padding: 12px;
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .registration-form button:hover {
+    background-color: #0056b3;
+  }
+  
+  .error-msg {
+    color: #ff0000;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  .success-msg {
+    color: #28a745;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  /* Fade-up animation */
+  @keyframes fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0px) scale(1);
+    }
+  } 
