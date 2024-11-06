@@ -1,17 +1,10 @@
-// pages/api/getBalance.js
 const mysql = require('mysql2');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: './test.env' }); // Load environment variables
-console.log('Database configuration:', {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  database: process.env.DB_NAME,
-});
+dotenv.config({ path: './test.env' }); // Load environment variables only once
 
-// Create a MySQL connection using environment variables
-const db = mysql.createConnection({
+// Create a MySQL connection pool (persistent connection)
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -19,18 +12,18 @@ const db = mysql.createConnection({
   port: process.env.DB_PORT,
 });
 
-// Connect to the database
-db.connect((err) => {
+// Test database connection
+db.getConnection((err, connection) => {
   if (err) {
     console.error('Database connection failed:', err);
-    return;
+  } else {
+    console.log('Connected to MySQL database');
+    connection.release();
   }
-  console.log('Connected to MySQL database');
 });
 
 // Export the API route handler
 export default function handler(req, res) {
-  // Get userID from custom header
   const userID = req.headers['x-user-id'];
 
   if (!userID) {
@@ -44,10 +37,8 @@ export default function handler(req, res) {
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  // Log the request for debugging
   console.log(`Fetching balance for UserID: ${userID}`);
 
-  // Query to get the balance for the given userID
   const query = `
     SELECT Balance
     FROM Users
@@ -60,7 +51,6 @@ export default function handler(req, res) {
       return res.status(500).json({ message: 'Internal server error.' });
     }
 
-    // After fetching the results
     if (results.length > 0) {
       const balance = parseFloat(results[0].Balance);
       console.log(`Balance fetched: ${balance} (Type: ${typeof balance})`);
