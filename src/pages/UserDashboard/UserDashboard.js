@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import './UserDashboard.css';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../components/Authentication/AuthContext'; // Adjust the path as needed
 
 const itemFields = {
   ItemBook: [
@@ -38,18 +39,19 @@ const itemFields = {
 };
 
 const UserDashboard = () => {
+  const { userID } = useContext(AuthContext); // Get userID from AuthContext
+  const navigate = useNavigate();
+
   const [itemsData, setItemsData] = useState([]);
   const [currentItemType, setCurrentItemType] = useState('ItemBook');
-  const [currentUserID, setCurrentUserID] = useState('U001'); // Replace with actual user ID
   const [balance, setBalance] = useState(null);
   const [message, setMessage] = useState('');
   const [viewBorrowedItems, setViewBorrowedItems] = useState(false);
   const [borrowedItems, setBorrowedItems] = useState([]);
-  const navigate = useNavigate();
 
-  // Define fetchBalance at the component level
+  // Define fetchBalance at the component level so it can be accessed by other functions
   const fetchBalance = async () => {
-    if (!currentUserID) {
+    if (!userID) {
       // User is not logged in, redirect to login page
       navigate('/login');
       return;
@@ -59,7 +61,7 @@ const UserDashboard = () => {
       const response = await fetch('/api/getBalance', {
         method: 'GET',
         headers: {
-          'x-user-id': currentUserID, // Send userID in custom header
+          'x-user-id': userID, // Send userID in custom header
         },
       });
 
@@ -78,11 +80,14 @@ const UserDashboard = () => {
     }
   };
 
-  // Fetch the user's balance when the component mounts
+  // Fetch the user's balance when the component mounts or when userID changes
   useEffect(() => {
-    fetchBalance();
-  }, [currentUserID, navigate]);
+    if (userID) {
+      fetchBalance();
+    }
+  }, [userID, navigate]);
 
+  // Function to fetch available items based on the current item type
   const fetchItems = async (table) => {
     try {
       const response = await fetch(`/api/pullAPI?table=${table}&available=true`);
@@ -98,29 +103,34 @@ const UserDashboard = () => {
     }
   };
 
+  // Fetch items when the currentItemType changes
   useEffect(() => {
-    fetchItems(currentItemType);
-  }, [currentItemType]);
+    if (userID) { // Ensure userID is available before fetching items
+      fetchItems(currentItemType);
+    }
+  }, [currentItemType, userID]);
 
+  // Handle changing the item type (Books, Devices, etc.)
   const handleItemTypeChange = (itemType) => {
     setCurrentItemType(itemType);
     setViewBorrowedItems(false);
-    fetchItems(itemType);
+    setMessage('');
   };
 
+  // Function to borrow an item
   const borrowItem = async (item) => {
     // Confirmation dialog
-    const confirmBorrow = window.confirm(`Do you want to borrow ${item.Title || item.Name || 'this item'}?`);
+    const confirmBorrow = window.confirm(`Do you want to borrow "${item.Title || item.Name || 'this item'}"?`);
     if (!confirmBorrow) {
       return;
     }
 
     try {
       const borrowData = {
-        userID: currentUserID,
+        userID: userID,
       };
 
-      // Determine the correct item ID key
+      // Determine the correct item ID key based on the current item type
       if (currentItemType === 'ItemBook') {
         borrowData.bookISBN = item['ISBN']; // Use ISBN instead of BookID
       } else if (currentItemType === 'ItemDevices') {
@@ -145,23 +155,28 @@ const UserDashboard = () => {
       const result = await response.json();
       console.log('Borrowed item successfully:', result);
       setMessage('Item borrowed successfully!');
-      fetchItems(currentItemType); // Refresh items data after borrowing
-      fetchBorrowedItems(); // Refresh borrowed items
-      fetchBalance(); // Refresh balance if needed
+
+      // Refresh items and balance after borrowing
+      fetchItems(currentItemType);
+      fetchBorrowedItems();
+      fetchBalance();
     } catch (error) {
       console.error('Error borrowing item:', error);
       setMessage(error.message);
     }
   };
 
+  // Function to view borrowed items
   const handleViewBorrowedItems = () => {
     setViewBorrowedItems(true);
+    setMessage('');
     fetchBorrowedItems();
   };
 
+  // Function to fetch borrowed items for the user
   const fetchBorrowedItems = async () => {
     try {
-      const response = await fetch(`/api/getBorrowedItems?userID=${currentUserID}`);
+      const response = await fetch(`/api/getBorrowedItems?userID=${userID}`);
       if (!response.ok) {
         throw new Error('Failed to fetch borrowed items');
       }
@@ -192,10 +207,30 @@ const UserDashboard = () => {
 
         {/* Buttons to select the item type */}
         <div className="button-group">
-          <button onClick={() => handleItemTypeChange('ItemBook')}>Books</button>
-          <button onClick={() => handleItemTypeChange('ItemDevices')}>Devices</button>
-          <button onClick={() => handleItemTypeChange('ItemMagazine')}>Magazines</button>
-          <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
+          <button
+            className={currentItemType === 'ItemBook' ? 'active' : ''}
+            onClick={() => handleItemTypeChange('ItemBook')}
+          >
+            Books
+          </button>
+          <button
+            className={currentItemType === 'ItemDevices' ? 'active' : ''}
+            onClick={() => handleItemTypeChange('ItemDevices')}
+          >
+            Devices
+          </button>
+          <button
+            className={currentItemType === 'ItemMagazine' ? 'active' : ''}
+            onClick={() => handleItemTypeChange('ItemMagazine')}
+          >
+            Magazines
+          </button>
+          <button
+            className={currentItemType === 'ItemMedia' ? 'active' : ''}
+            onClick={() => handleItemTypeChange('ItemMedia')}
+          >
+            Media
+          </button>
           <button onClick={handleViewBorrowedItems}>My Borrowed Items</button>
         </div>
 
@@ -215,22 +250,30 @@ const UserDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {borrowedItems.map((record) => (
-                  <tr key={record.BorrowRecordID}>
-                    <td>{record.BorrowRecordID}</td>
-                    <td>{record.ItemType}</td>
-                    <td>{record.ItemID}</td>
-                    <td>{new Date(record.BorrowDate).toLocaleDateString()}</td>
-                    <td>{new Date(record.DueDate).toLocaleDateString()}</td>
-                    <td>{record.ReturnDate ? new Date(record.ReturnDate).toLocaleDateString() : 'Not Returned'}</td>
-                    <td>${parseFloat(record.FineAmount).toFixed(2)}</td>
+                {borrowedItems.length > 0 ? (
+                  borrowedItems.map((record) => (
+                    <tr key={record.BorrowRecordID}>
+                      <td>{record.BorrowRecordID}</td>
+                      <td>{record.ItemType}</td>
+                      <td>{record.ItemID}</td>
+                      <td>{new Date(record.BorrowDate).toLocaleDateString()}</td>
+                      <td>{new Date(record.DueDate).toLocaleDateString()}</td>
+                      <td>
+                        {record.ReturnDate ? new Date(record.ReturnDate).toLocaleDateString() : 'Not Returned'}
+                      </td>
+                      <td>${parseFloat(record.FineAmount).toFixed(2)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7">No borrowed items found.</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         ) : itemsData.length > 0 ? (
-          // Existing code to render available items and borrow button
+          // Render available items and borrow button
           <div className="table-container">
             <table className="data-table">
               <thead>
