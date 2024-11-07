@@ -1,26 +1,23 @@
 .login-container {
 	display: flex;
-	justify-content: center; /* Center horizontally */
-	align-items: center;    /* Center vertically */
+	justify-content: center;
+	align-items: center;
 	height: 100vh;          /* Full viewport height */
 	background-color: #f0f2f5; /* Light background color */
-	margin-top: 60px;
   }
   
-  /* Style for the login form box */
   .login-form {
 	background-color: #ffffff; /* White background */
 	padding: 40px;             /* Inner spacing */
 	border-radius: 8px;        /* Rounded corners */
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 	width: 100%;
-	max-width: 400px;          /* Max width for responsiveness */
+	max-width: 400px;
 	display: flex;
 	flex-direction: column;
 	animation: fade-up 0.5s ease-out;
   }
   
-  /* Style for form controls (labels and inputs) */
   .form-control {
 	display: flex;
 	flex-direction: column;
@@ -46,7 +43,6 @@
 	box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* Focus shadow */
   }
   
-  /* Style for the login button */
   .login-form button {
 	padding: 12px;
 	background-color: #007bff; /* Blue background */
@@ -62,14 +58,12 @@
 	background-color: #0056b3; /* Darker blue on hover */
   }
   
-  /* Style for error messages */
   .error-msg {
 	color: #ff0000; /* Red text for errors */
 	margin-bottom: 20px;
 	text-align: center;
   }
   
-  /* Fade-up animation */
   @keyframes fade-up {
 	0% {
 	  opacity: 0;

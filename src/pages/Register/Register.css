@@ -1,17 +1,22 @@
-/* Style for the entire registration page container */
-.registration-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;          /* Added padding to prevent overflow */
-    background-color: #f0f2f5;
-    box-sizing: border-box; /* Ensure padding doesn't cause overflow */
-    margin-top: 60px;
-    padding-top: var(--navbar-height); /* Space for the fixed navbar */
-    overflow-y: auto; /* Enable vertical scrolling if content overflows */
-     padding-bottom: 20px; /* Optional: Space at the bottom */
-    height: 100vh; /* Full viewport height to allow scrolling within this area */
-  }
+    .registration-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px; /* Added padding to prevent overflow */
+        background-color: #f0f2f5;
+        box-sizing: border-box; /* Ensure padding doesn't cause overflow */
+        margin-top: 60px;
+        padding-top: 55vh; /* Space for the fixed navbar */
+        overflow-y: auto; /* Enable vertical scrolling if content overflows */
+        height: 100vh; /* Full viewport height to allow scrolling within this area */
+    }
+
+    @media (max-width: 1080px) {
+        .registration-container {
+            margin-top: 20px; 
+            padding-top: 90vh;
+        }
+    }
   
   .registration-form {
     background-color: #ffffff;
