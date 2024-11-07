@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './StaffDashboard.css'; // Import the external CSS file
+import './StaffDashboard.css';
 
 const itemFields = {
   BorrowRecord: [

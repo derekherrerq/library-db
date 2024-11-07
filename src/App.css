@@ -1,7 +1,7 @@
 .main-content {
     padding-top: calc(var(--navbar-height, 100px));
-    padding-left: 1rem; /* Optional: horizontal padding */
-    padding-right: 1rem; /* Optional: horizontal padding */
-    min-height: 100vh; /* Ensures the content covers the viewport height */
-    background-color: #f8f9fa; /* Optional: light background for content */
+    padding-left: 1rem;
+    padding-right: 1rem;
+    min-height: 100vh;
+    background-color: #f8f9fa;
   }

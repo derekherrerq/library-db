@@ -63,7 +63,18 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       // Fetch data based on the specified table
-      const [results] = await connection.execute(`SELECT * FROM ${table}`);
+      let sql = `SELECT * FROM ${table}`;
+      const params = [];
+
+      // BEGIN: Added code to handle 'available' query parameter
+      // Check if 'available=true' is specified and if the table has an 'Availability' column
+      const tablesWithAvailability = ['ItemBook', 'ItemDevices', 'ItemMagazine', 'ItemMedia'];
+      if (req.query.available === 'true' && tablesWithAvailability.includes(table)) {
+        sql += ` WHERE Availability = 'Available'`;
+      }
+      // END: Added code
+
+      const [results] = await connection.execute(sql);
       await connection.end();
       res.status(200).json(results);
     } else if (req.method === 'POST') {
