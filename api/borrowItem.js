@@ -126,8 +126,8 @@ export default async function handler(req, res) {
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 14);
         const formattedDueDate = formatDateToMySQL(dueDate);
-        // Set return date to the due date (2 weeks from borrow date)
-        const formattedReturnDate = formattedDueDate;
+        // Will be set by the user when the item is returned
+        const formattedReturnDate = null;
 
         // SQL query to insert the borrow record into the database
         const insertBorrowRecordQuery = `
