@@ -66,13 +66,11 @@ export default async function handler(req, res) {
       let sql = `SELECT * FROM ${table}`;
       const params = [];
 
-      // BEGIN: Added code to handle 'available' query parameter
       // Check if 'available=true' is specified and if the table has an 'Availability' column
       const tablesWithAvailability = ['ItemBook', 'ItemDevices', 'ItemMagazine', 'ItemMedia'];
       if (req.query.available === 'true' && tablesWithAvailability.includes(table)) {
         sql += ` WHERE Availability = 'Available'`;
       }
-      // END: Added code
 
       const [results] = await connection.execute(sql);
       await connection.end();

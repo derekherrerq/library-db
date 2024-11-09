@@ -2,13 +2,13 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 20px; /* Added padding to prevent overflow */
+        padding: 20px;
         background-color: #f0f2f5;
-        box-sizing: border-box; /* Ensure padding doesn't cause overflow */
+        box-sizing: border-box;
         margin-top: 60px;
-        padding-top: 55vh; /* Space for the fixed navbar */
-        overflow-y: auto; /* Enable vertical scrolling if content overflows */
-        height: 100vh; /* Full viewport height to allow scrolling within this area */
+        padding-top: 55vh;
+        overflow-y: auto;
+        height: 100vh;
     }
 
     @media (max-width: 1080px) {
@@ -100,7 +100,6 @@
     text-align: center;
   }
   
-  /* Fade-up animation */
   @keyframes fade-up {
     0% {
       opacity: 0;

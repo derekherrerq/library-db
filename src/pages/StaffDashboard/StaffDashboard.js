@@ -54,11 +54,28 @@ const itemFields = {
     { label: 'Cost', key: 'Cost', isCurrency: true },
     { label: 'Availability', key: 'Availability' },
   ],
+  Users: [
+    { label: 'User ID', key: 'UserID' },
+    { label: 'Role', key: 'Role' },
+    { label: 'First Name', key: 'FirstName' },
+    { label: 'Last Name', key: 'LastName' },
+    { label: 'Email', key: 'Email' },
+    { label: 'Phone Number', key: 'PhoneNumber' },
+    { label: 'Start Date', key: 'StartDate', isDate: true },
+    { label: 'Birthday', key: 'Birthday', isDate: true },
+    { label: 'Street Address', key: 'StreetAddress' },
+    { label: 'City', key: 'City' },
+    { label: 'State', key: 'State' },
+    { label: 'Zip Code', key: 'ZipCode' },
+    { label: 'Borrow Limit', key: 'BorrowLimit' },
+    { label: 'Balance', key: 'Balance', isCurrency: true },
+    { label: 'Suspended', key: 'Suspended', isBoolean: true },
+  ],
 };
 
 const StaffDashboard = () => {
   const [itemsData, setItemsData] = useState([]);
-  const [currentItemType, setCurrentItemType] = useState('ItemBook');
+  const [currentItemType, setCurrentItemType] = useState('ItemBook'); // Default to a primary item type
 
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
@@ -90,7 +107,7 @@ const StaffDashboard = () => {
   };
 
   const handleInputChange = (e, field) => {
-    const { name, value, checked } = e.target;
+    const { name, value, type, checked } = e.target;
     let newValue = value;
 
     if (field && field.isBoolean) {
@@ -111,11 +128,13 @@ const StaffDashboard = () => {
 
     fields.forEach((field) => {
       if (field.isDate && processedItem[field.key]) {
+        // Ensure date is in 'YYYY-MM-DD' format
         processedItem[field.key] = new Date(processedItem[field.key])
           .toISOString()
           .split('T')[0];
       }
       if (field.isBoolean) {
+        // Convert to boolean
         processedItem[field.key] =
           processedItem[field.key] === '1' ||
           processedItem[field.key] === 1 ||
@@ -158,9 +177,11 @@ const StaffDashboard = () => {
       const fields = itemFields[currentItemType];
       fields.forEach((field) => {
         if (field.isDate && dataToSend[field.key]) {
+          // Ensure date is in 'YYYY-MM-DD' format
           dataToSend[field.key] = dataToSend[field.key];
         }
         if (field.isBoolean && dataToSend[field.key] !== undefined) {
+          // Convert boolean to the format expected by backend
           dataToSend[field.key] = dataToSend[field.key] ? 1 : 0;
         }
       });
@@ -194,6 +215,7 @@ const StaffDashboard = () => {
           <button onClick={() => handleItemTypeChange('ItemDevices')}>Devices</button>
           <button onClick={() => handleItemTypeChange('ItemMagazine')}>Magazines</button>
           <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
+          <button onClick={() => handleItemTypeChange('Users')}>Users</button>
         </div>
 
         {itemsData.length > 0 ? (
@@ -245,9 +267,7 @@ const StaffDashboard = () => {
         )}
 
         {/* Form to add or edit items */}
-        <h2>
-          {isEditing ? 'Edit' : 'Add New'} {currentItemType}
-        </h2>
+        <h2>{isEditing ? 'Edit' : 'Add New'} {currentItemType}</h2>
         <form onSubmit={handleFormSubmit} className="dashboard-form">
           {itemFields[currentItemType].map((field) => (
             <div key={field.key} className="form-control">
@@ -278,7 +298,7 @@ const StaffDashboard = () => {
                         ? formData[field.key]
                         : formData[field.key] || ''
                     }
-                    onChange={(e) => handleInputChange(e, field)}
+                    onChange={handleInputChange}
                     required
                     disabled={isEditing && field.key === itemFields[currentItemType][0].key}
                   />
