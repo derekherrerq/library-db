@@ -46,7 +46,7 @@ const UserDashboard = () => {
   const [currentItemType, setCurrentItemType] = useState('ItemBook');
   const [balance, setBalance] = useState(null);
   const [message, setMessage] = useState('');
-  const [viewBorrowedItems, setViewBorrowedItems] = useState(false);
+  const [viewBorrowedItems, setViewBorrowedItems] = useState(false); // false, 'active', or 'history'
   const [borrowedItems, setBorrowedItems] = useState([]);
 
   // Define fetchBalance at the component level so it can be accessed by other functions
@@ -105,10 +105,10 @@ const UserDashboard = () => {
 
   // Fetch items when the currentItemType changes
   useEffect(() => {
-    if (userID) { // Ensure userID is available before fetching items
+    if (userID && !viewBorrowedItems) { // Ensure userID is available and not viewing borrowed items
       fetchItems(currentItemType);
     }
-  }, [currentItemType, userID]);
+  }, [currentItemType, userID, viewBorrowedItems]);
 
   // Handle changing the item type (Books, Devices, etc.)
   const handleItemTypeChange = (itemType) => {
@@ -158,7 +158,7 @@ const UserDashboard = () => {
 
       // Refresh items and balance after borrowing
       fetchItems(currentItemType);
-      fetchBorrowedItems();
+      fetchBorrowedItems(viewBorrowedItems);
       fetchBalance();
     } catch (error) {
       console.error('Error borrowing item:', error);
@@ -166,17 +166,66 @@ const UserDashboard = () => {
     }
   };
 
+  // Function to return an item
+  const returnItem = async (borrowRecordID) => {
+    // Confirmation dialog
+    const confirmReturn = window.confirm('Are you sure you want to return this item?');
+    if (!confirmReturn) {
+      return;
+    }
+
+    try {
+      const returnData = {
+        BorrowRecordID: borrowRecordID,
+      };
+
+      const response = await fetch('/api/returnItem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(returnData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to return item');
+      }
+
+      const result = await response.json();
+      console.log('Returned item successfully:', result);
+      setMessage('Item returned successfully!');
+
+      // Refresh borrowed items and balance after returning
+      fetchBorrowedItems(viewBorrowedItems);
+      fetchBalance();
+    } catch (error) {
+      console.error('Error returning item:', error);
+      setMessage(error.message);
+    }
+  };
+
   // Function to view borrowed items
   const handleViewBorrowedItems = () => {
-    setViewBorrowedItems(true);
+    setViewBorrowedItems('active');
     setMessage('');
-    fetchBorrowedItems();
+    fetchBorrowedItems('Active'); // Updated to 'Active'
+  };
+
+  // Function to view borrow history
+  const handleViewBorrowHistory = () => {
+    setViewBorrowedItems('history');
+    setMessage('');
+    fetchBorrowedItems('history'); // Pass 'history' to fetch all records
   };
 
   // Function to fetch borrowed items for the user
-  const fetchBorrowedItems = async () => {
+  const fetchBorrowedItems = async (status = 'active') => {
     try {
-      const response = await fetch(`/api/getBorrowedItems?userID=${userID}`);
+      let url = `/api/getBorrowedItems?userID=${userID}`;
+      if (status === 'Active') { // Updated to 'Active'
+        url += '&status=Active';
+      }
+      // If status is 'history', fetch all borrowed items regardless of status
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch borrowed items');
       }
@@ -187,6 +236,11 @@ const UserDashboard = () => {
       alert(error.message);
     }
   };
+
+  // Define a filtered list based on the current view
+  const displayedBorrowedItems = viewBorrowedItems === 'active'
+    ? borrowedItems.filter(item => item.Status === 'Active')
+    : borrowedItems;
 
   return (
     <div className="dashboard-container">
@@ -205,7 +259,7 @@ const UserDashboard = () => {
         {/* Display any messages */}
         {message && <p className="message">{message}</p>}
 
-        {/* Buttons to select the item type */}
+        {/* Buttons to select the item type and view borrowed items/history */}
         <div className="button-group">
           <button
             className={currentItemType === 'ItemBook' ? 'active' : ''}
@@ -231,11 +285,23 @@ const UserDashboard = () => {
           >
             Media
           </button>
-          <button onClick={handleViewBorrowedItems}>My Borrowed Items</button>
+          {/* New buttons for borrowed items and history */}
+          <button
+            className={viewBorrowedItems === 'active' ? 'active' : ''}
+            onClick={handleViewBorrowedItems}
+          >
+            My Borrowed Items
+          </button>
+          <button
+            className={viewBorrowedItems === 'history' ? 'active' : ''}
+            onClick={handleViewBorrowHistory}
+          >
+            Borrow History
+          </button>
         </div>
 
-        {viewBorrowedItems ? (
-          // Render the borrowed items
+        {viewBorrowedItems === 'active' || viewBorrowedItems === 'history' ? (
+          // Render borrowed items or borrow history
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -247,11 +313,13 @@ const UserDashboard = () => {
                   <th>Due Date</th>
                   <th>Return Date</th>
                   <th>Fine Amount</th>
+                  {viewBorrowedItems === 'history' && <th>Status</th>}
+                  {viewBorrowedItems === 'active' && <th>Action</th>}
                 </tr>
               </thead>
               <tbody>
-                {borrowedItems.length > 0 ? (
-                  borrowedItems.map((record) => (
+                {displayedBorrowedItems.length > 0 ? (
+                  displayedBorrowedItems.map((record) => (
                     <tr key={record.BorrowRecordID}>
                       <td>{record.BorrowRecordID}</td>
                       <td>{record.ItemType}</td>
@@ -262,11 +330,21 @@ const UserDashboard = () => {
                         {record.ReturnDate ? new Date(record.ReturnDate).toLocaleDateString() : 'Not Returned'}
                       </td>
                       <td>${parseFloat(record.FineAmount).toFixed(2)}</td>
+                      {viewBorrowedItems === 'history' && (
+                        <td>{record.Status === 'Active' ? 'Active' : 'Returned'}</td>
+                      )}
+                      {viewBorrowedItems === 'active' && (
+                        <td>
+                          <button onClick={() => returnItem(record.BorrowRecordID)}>Return</button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7">No borrowed items found.</td>
+                    <td colSpan={viewBorrowedItems === 'history' ? '8' : '7'}>
+                      No {viewBorrowedItems === 'history' ? 'borrow history' : 'active borrowed'} found.
+                    </td>
                   </tr>
                 )}
               </tbody>

@@ -35,7 +35,8 @@ export default async function handler(req, res) {
           br.BorrowDate,
           br.DueDate,
           br.ReturnDate,
-          br.FineAmount
+          br.FineAmount,
+          br.Status
         FROM BorrowRecord br
         WHERE br.UserID = ?
         `,
