@@ -37,24 +37,25 @@ export default function handler(req, res) {
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  console.log(`Fetching balance for UserID: ${userID}`);
+  console.log(`Fetching balance and suspension status for UserID: ${userID}`);
 
   const query = `
-    SELECT Balance
+    SELECT Balance, Suspended
     FROM Users
     WHERE UserID = ?
   `;
 
   db.query(query, [userID], (error, results) => {
     if (error) {
-      console.error('Error fetching balance:', error);
+      console.error('Error fetching balance and suspension status:', error);
       return res.status(500).json({ message: 'Internal server error.' });
     }
 
     if (results.length > 0) {
       const balance = parseFloat(results[0].Balance);
-      console.log(`Balance fetched: ${balance} (Type: ${typeof balance})`);
-      res.status(200).json({ balance: balance });
+      const suspended = results[0].Suspended === 1; // Convert to boolean
+      console.log(`Balance fetched: ${balance} (Type: ${typeof balance}), Suspended: ${suspended}`);
+      res.status(200).json({ balance: balance, suspended: suspended });
     } else {
       console.error('User not found');
       res.status(404).json({ message: 'User not found' });

@@ -45,6 +45,7 @@ const UserDashboard = () => {
   const [itemsData, setItemsData] = useState([]);
   const [currentItemType, setCurrentItemType] = useState('ItemBook');
   const [balance, setBalance] = useState(null);
+  const [suspended, setSuspended] = useState(false); // New state for suspension
   const [message, setMessage] = useState('');
   const [viewBorrowedItems, setViewBorrowedItems] = useState(false); // false, 'active', or 'history'
   const [borrowedItems, setBorrowedItems] = useState([]);
@@ -68,9 +69,10 @@ const UserDashboard = () => {
       const data = await response.json();
 
       if (response.ok) {
-        console.log('Fetched balance:', data.balance, 'Type:', typeof data.balance);
+        console.log('Fetched balance:', data.balance, 'Suspended:', data.suspended);
         const numericBalance = parseFloat(data.balance);
         setBalance(numericBalance);
+        setSuspended(data.suspended); // Set suspended status
       } else {
         setMessage(data.message || 'Failed to fetch balance');
       }
@@ -119,6 +121,11 @@ const UserDashboard = () => {
 
   // Function to borrow an item
   const borrowItem = async (item) => {
+    if (suspended) {
+      setMessage('Your account is suspended. Please resolve outstanding fines to borrow items.');
+      return;
+    }
+
     // Confirmation dialog
     const confirmBorrow = window.confirm(`Do you want to borrow "${item.Title || item.Name || 'this item'}"?`);
     if (!confirmBorrow) {
@@ -256,6 +263,13 @@ const UserDashboard = () => {
           )}
         </div>
 
+        {/* Display suspension status if suspended */}
+        {suspended && (
+          <div className="suspended-status">
+            <p className="suspended-text">Your account is <strong>Suspended</strong>.</p>
+          </div>
+        )}
+
         {/* Display any messages */}
         {message && <p className="message">{message}</p>}
 
@@ -264,24 +278,32 @@ const UserDashboard = () => {
           <button
             className={currentItemType === 'ItemBook' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemBook')}
+            disabled={suspended} // Disable if suspended
+            title={suspended ? 'Cannot borrow while suspended' : 'Borrow Books'}
           >
             Books
           </button>
           <button
             className={currentItemType === 'ItemDevices' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemDevices')}
+            disabled={suspended}
+            title={suspended ? 'Cannot borrow while suspended' : 'Borrow Devices'}
           >
             Devices
           </button>
           <button
             className={currentItemType === 'ItemMagazine' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemMagazine')}
+            disabled={suspended}
+            title={suspended ? 'Cannot borrow while suspended' : 'Borrow Magazines'}
           >
             Magazines
           </button>
           <button
             className={currentItemType === 'ItemMedia' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemMedia')}
+            disabled={suspended}
+            title={suspended ? 'Cannot borrow while suspended' : 'Borrow Media'}
           >
             Media
           </button>
@@ -299,6 +321,13 @@ const UserDashboard = () => {
             Borrow History
           </button>
         </div>
+
+        {/* Inform the user if they are suspended and attempting to borrow */}
+        {suspended && (
+          <div className="suspension-warning">
+            <p>Please settle your outstanding fines to reactivate your account.</p>
+          </div>
+        )}
 
         {viewBorrowedItems === 'active' || viewBorrowedItems === 'history' ? (
           // Render borrowed items or borrow history
@@ -383,7 +412,13 @@ const UserDashboard = () => {
                       return <td key={field.key}>{value}</td>;
                     })}
                     <td>
-                      <button onClick={() => borrowItem(item)}>Borrow</button>
+                      <button
+                        onClick={() => borrowItem(item)}
+                        disabled={suspended} // Disable if suspended
+                        title={suspended ? 'Cannot borrow while suspended' : 'Borrow this item'}
+                      >
+                        Borrow
+                      </button>
                     </td>
                   </tr>
                 ))}

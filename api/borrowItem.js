@@ -41,12 +41,14 @@ const generateBorrowRecordID = (callback) => {
 };
 
 // Function to format date to YYYY-MM-DD
-const formatDateToMySQL = (date) => {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-based
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`; // Format to YYYY-MM-DD
+const formatDateToMySQL = (dateString) => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return null;
+  const yyyy = date.getFullYear();
+  const mm = ('0' + (date.getMonth() + 1)).slice(-2);
+  const dd = ('0' + date.getDate()).slice(-2);
+  return `${yyyy}-${mm}-${dd}`;
 };
 
 // Export the API route handler
@@ -93,94 +95,117 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'No item ID provided.' });
     }
 
-    // Check if the item is available
-    const checkAvailabilityQuery = `
-      SELECT Availability FROM ${itemTable} WHERE ${itemIDColumn} = ?
+    // Check if the user is suspended
+    const checkSuspensionQuery = `
+      SELECT Suspended
+      FROM Users
+      WHERE UserID = ?
     `;
-    db.query(checkAvailabilityQuery, [itemIDValue], (error, results) => {
+    db.query(checkSuspensionQuery, [userID], (error, results) => {
       if (error) {
-        console.error('Error checking availability:', error);
+        console.error('Error checking suspension status:', error);
         return res.status(500).json({ message: 'Internal server error.' });
       }
 
       if (results.length === 0) {
-        return res.status(404).json({ message: 'Item not found.' });
+        return res.status(404).json({ message: 'User not found.' });
       }
 
-      if (results[0].Availability !== 'Available') {
-        return res.status(400).json({ message: 'Item is not available.' });
+      const isSuspended = results[0].Suspended === 1;
+
+      if (isSuspended) {
+        return res.status(403).json({ message: 'Your account is suspended. Please resolve outstanding fines to borrow items.' });
       }
 
-      // Proceed to create BorrowRecord
-      generateBorrowRecordID((error, newBorrowRecordID) => {
+      // Check if the item is available
+      const checkAvailabilityQuery = `
+        SELECT Availability FROM ${itemTable} WHERE ${itemIDColumn} = ?
+      `;
+      db.query(checkAvailabilityQuery, [itemIDValue], (error, results) => {
         if (error) {
-          return res.status(500).json({ message: 'Error generating BorrowRecordID.' });
+          console.error('Error checking availability:', error);
+          return res.status(500).json({ message: 'Internal server error.' });
         }
 
-        const createdAt = formatDateToMySQL(new Date()); // Format the current date to YYYY-MM-DD
-        const lastUpdated = formatDateToMySQL(new Date()); // Set LastUpdated to current date
+        if (results.length === 0) {
+          return res.status(404).json({ message: 'Item not found.' });
+        }
 
-        // Automatically set the borrow date to today's date
-        const formattedBorrowDate = formatDateToMySQL(new Date());
-        // Automatically set the due date to two weeks from today
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 14);
-        const formattedDueDate = formatDateToMySQL(dueDate);
-        // Will be set by the user when the item is returned
-        const formattedReturnDate = null;
+        if (results[0].Availability !== 'Available') {
+          return res.status(400).json({ message: 'Item is not available.' });
+        }
 
-        // SQL query to insert the borrow record into the database
-        const insertBorrowRecordQuery = `
-          INSERT INTO BorrowRecord (
-            BorrowRecordID, 
-            UserID, 
-            ${borrowRecordItemColumn}, 
-            BorrowDate, 
-            DueDate, 
-            ReturnDate, 
-            FineAmount, 
-            CreatedBy, 
-            CreatedAt,
-            UpdatedBy,
-            LastUpdated
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+        // Proceed to create BorrowRecord
+        generateBorrowRecordID((error, newBorrowRecordID) => {
+          if (error) {
+            return res.status(500).json({ message: 'Error generating BorrowRecordID.' });
+          }
 
-        db.query(
-          insertBorrowRecordQuery,
-          [
-            newBorrowRecordID,
-            userID,
-            itemIDValue,
-            formattedBorrowDate,
-            formattedDueDate,
-            formattedReturnDate, // Set ReturnDate to DueDate
-            0, // FineAmount set to 0
-            'user', // CreatedBy set to 'user'
-            createdAt,
-            'user', // UpdatedBy set to 'user'
-            lastUpdated,
-          ],
-          (error, results) => {
-            if (error) {
-              console.error('Error inserting borrow record:', error);
-              return res.status(500).json({ message: 'Internal server error.' });
-            }
+          const createdAt = formatDateToMySQL(new Date()); // Format the current date to YYYY-MM-DD
+          const lastUpdated = formatDateToMySQL(new Date()); // Set LastUpdated to current date
 
-            // Update the item's availability to 'Checked Out'
-            const updateAvailabilityQuery = `
-              UPDATE ${itemTable} SET Availability = 'Checked Out' WHERE ${itemIDColumn} = ?
-            `;
-            db.query(updateAvailabilityQuery, [itemIDValue], (error, results) => {
+          // Automatically set the borrow date to today's date
+          const formattedBorrowDate = formatDateToMySQL(new Date());
+          // Automatically set the due date to two weeks from today
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 14);
+          const formattedDueDate = formatDateToMySQL(dueDate);
+          // Will be set by the user when the item is returned
+          const formattedReturnDate = null;
+
+          // SQL query to insert the borrow record into the database
+          const insertBorrowRecordQuery = `
+            INSERT INTO BorrowRecord (
+              BorrowRecordID, 
+              UserID, 
+              ${borrowRecordItemColumn}, 
+              BorrowDate, 
+              DueDate, 
+              ReturnDate, 
+              FineAmount, 
+              CreatedBy, 
+              CreatedAt,
+              UpdatedBy,
+              LastUpdated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `;
+
+          db.query(
+            insertBorrowRecordQuery,
+            [
+              newBorrowRecordID,
+              userID,
+              itemIDValue,
+              formattedBorrowDate,
+              formattedDueDate,
+              formattedReturnDate, // Set ReturnDate to DueDate
+              0, // FineAmount set to 0
+              'user', // CreatedBy set to 'user'
+              createdAt,
+              'user', // UpdatedBy set to 'user'
+              lastUpdated,
+            ],
+            (error, results) => {
               if (error) {
-                console.error('Error updating item availability:', error);
+                console.error('Error inserting borrow record:', error);
                 return res.status(500).json({ message: 'Internal server error.' });
               }
 
-              res.status(201).json({ message: 'Item borrowed successfully!' });
-            });
-          }
-        );
+              // Update the item's availability to 'Checked Out'
+              const updateAvailabilityQuery = `
+                UPDATE ${itemTable} SET Availability = 'Checked Out' WHERE ${itemIDColumn} = ?
+              `;
+              db.query(updateAvailabilityQuery, [itemIDValue], (error, results) => {
+                if (error) {
+                  console.error('Error updating item availability:', error);
+                  return res.status(500).json({ message: 'Internal server error.' });
+                }
+
+                res.status(201).json({ message: 'Item borrowed successfully!' });
+              });
+            }
+          );
+        });
       });
     });
   } else {
