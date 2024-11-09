@@ -9,7 +9,6 @@ const NavBar = lazy(() => import('./components/Navbar/Navbar'));
 const Home = lazy(() => import('./pages/Home/Home'));
 const Login = lazy(() => import('./pages/Login/Login'));
 const Register = lazy(() => import('./pages/Register/Register'));
-const SearchPage = lazy(() => import('./pages/SearchPage/SearchPage'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 const UserDashboard = lazy(() => import('./pages/UserDashboard/UserDashboard'));
 const StaffDashboard = lazy(() => import('./pages/StaffDashboard/StaffDashboard'));
@@ -63,7 +62,6 @@ const App = () => {
               {/* Public Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/search" element={<SearchPage />} /> {/* Add SearchPage route here */}
               <Route path="/404" element={<NotFound />} />
               <Route path="*" element={<FourOFour />} />
             </Routes>

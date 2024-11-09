@@ -30,7 +30,6 @@ const NavBar = () => {
           {isAuthenticated ? (
             <>
               <ActiveListItem url='/' name='Home' />
-              <ActiveListItem url='/search' name='Search' />
               {role === 'Admin' && (
                 <ActiveListItem url='/admin-dashboard' name='Admin Dashboard' />
               )}
