@@ -1,41 +1,44 @@
-// src/components/NotificationBell.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { FaBell } from 'react-icons/fa';
+import { AuthContext } from './Authentication/AuthContext'; // Corrected path
 
-const NotificationBell = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+const NotificationBell = ({ notifications = [] }) => {  // Default to an empty array if undefined
+    const [showNotifications, setShowNotifications] = useState(false);
+    const { logout } = useContext(AuthContext);
 
-  useEffect(() => {
-    // Call the Vercel serverless function to get notifications
-    fetch('/api/notifications')
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.notifications) {
-          setNotifications(data.notifications);
-          setUnreadCount(data.notifications.length);
-        }
-      })
-      .catch((error) => console.error('Error fetching notifications:', error));
-  }, []);
+    const handleBellClick = () => {
+        setShowNotifications(!showNotifications);
+    };
 
-  return (
-    <div className="notification-bell">
-      <FaBell />
-      {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
-      <div className="notification-dropdown">
-        {notifications.length > 0 ? (
-          <ul>
-            {notifications.map((notification, index) => (
-              <li key={index}>{notification.body}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>No notifications</p>
-        )}
-      </div>
-    </div>
-  );
+    return (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            <button
+                onClick={handleBellClick}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+                <FaBell style={{ fontSize: '1.8em', color: 'black', marginLeft: '20px' }} />
+            </button>
+            {showNotifications && (
+                <div className="notifications-dropdown">
+                    {notifications.length > 0 ? (
+                        notifications.map((notification, index) => (
+                            <div key={index} className="notification-item">
+                                {notification.message}
+                            </div>
+                        ))
+                    ) : (
+                        <div className="notification-item">No notifications</div>
+                    )}
+                </div>
+            )}
+            <button
+                onClick={logout}
+                style={{ marginLeft: '20px', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+                Logout
+            </button>
+        </div>
+    );
 };
 
 export default NotificationBell;
