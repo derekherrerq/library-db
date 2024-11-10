@@ -1,10 +1,10 @@
 const mysql = require('mysql2');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: './test.env' });
+dotenv.config({ path: './test.env' }); // Load environment variables only once
 
-// Create a MySQL connection using environment variables
-const db = mysql.createConnection({
+// Create a MySQL connection pool (persistent connection)
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -12,31 +12,34 @@ const db = mysql.createConnection({
   port: process.env.DB_PORT,
 });
 
-// Connect to the database
-db.connect((err) => {
+// Test database connection
+db.getConnection((err, connection) => {
   if (err) {
     console.error('Database connection failed:', err);
-    return;
+  } else {
+    console.log('Connected to MySQL database');
+    connection.release();
   }
-  console.log('Connected to MySQL database');
 });
 
 // Function to generate BorrowRecordID
-const generateBorrowRecordID = (callback) => {
-  const query = `
-    SELECT MAX(CAST(SUBSTRING(BorrowRecordID, 3) AS UNSIGNED)) AS maxID 
-    FROM BorrowRecord
-  `;
+const generateBorrowRecordID = () => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT MAX(CAST(SUBSTRING(BorrowRecordID, 3) AS UNSIGNED)) AS maxID 
+      FROM BorrowRecord
+    `;
 
-  db.query(query, (error, results) => {
-    if (error) {
-      console.error('Error fetching max ID:', error);
-      return callback(error);
-    }
+    db.query(query, (error, results) => {
+      if (error) {
+        console.error('Error fetching max ID:', error);
+        return reject(error);
+      }
 
-    const maxID = results[0].maxID || 0;
-    const newID = `BR${String(maxID + 1).padStart(10, '0')}`; // Generates new ID
-    callback(null, newID);
+      const maxID = results[0].maxID || 0;
+      const newID = `BR${String(maxID + 1).padStart(10, '0')}`; // Generates new ID
+      resolve(newID);
+    });
   });
 };
 
@@ -61,7 +64,7 @@ export default async function handler(req, res) {
 
     // Ensure the required fields are provided
     if (!userID) {
-      console.error('Validation failed:', { userID });
+      console.error('Validation failed: UserID is missing');
       return res.status(400).json({ message: 'User ID is required.' });
     }
 
@@ -95,119 +98,127 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'No item ID provided.' });
     }
 
-    // Check if the user is suspended
-    const checkSuspensionQuery = `
-      SELECT Suspended
-      FROM Users
-      WHERE UserID = ?
-    `;
-    db.query(checkSuspensionQuery, [userID], (error, results) => {
-      if (error) {
-        console.error('Error checking suspension status:', error);
-        return res.status(500).json({ message: 'Internal server error.' });
-      }
+    try {
+      // Fetch user info (balance, suspended, borrowLimit, activeBorrowCount)
+      const userInfoQuery = `
+        SELECT Balance, Suspended, BorrowLimit
+        FROM Users
+        WHERE UserID = ?
+      `;
+      const [userResults] = await db.promise().query(userInfoQuery, [userID]);
 
-      if (results.length === 0) {
+      if (userResults.length === 0) {
+        console.error('User not found');
         return res.status(404).json({ message: 'User not found.' });
       }
 
-      const isSuspended = results[0].Suspended === 1;
+      const balance = parseFloat(userResults[0].Balance);
+      const suspended = userResults[0].Suspended === 1;
+      const borrowLimit = parseInt(userResults[0].BorrowLimit, 10);
 
-      if (isSuspended) {
-        return res.status(403).json({ message: 'Your account is suspended. Please resolve outstanding fines to borrow items.' });
+      // Count active borrows
+      const activeBorrowQuery = `
+        SELECT COUNT(*) AS activeCount
+        FROM BorrowRecord
+        WHERE UserID = ? AND Status = 'Active'
+      `;
+      const [borrowResults] = await db.promise().query(activeBorrowQuery, [userID]);
+      const activeBorrowCount = borrowResults[0].activeCount;
+
+      console.log(
+        `User Info - Balance: ${balance}, Suspended: ${suspended}, BorrowLimit: ${borrowLimit}, ActiveBorrows: ${activeBorrowCount}`
+      );
+
+      // Enforce borrow limit
+      if (activeBorrowCount >= borrowLimit) {
+        return res
+          .status(403)
+          .json({ message: `Borrow limit of ${borrowLimit} items reached.` });
+      }
+
+      // Check if the user is suspended
+      if (suspended) {
+        return res.status(403).json({
+          message:
+            'Your account is suspended. Please resolve outstanding fines to borrow items.',
+        });
       }
 
       // Check if the item is available
-      const checkAvailabilityQuery = `
-        SELECT Availability FROM ${itemTable} WHERE ${itemIDColumn} = ?
+      const availabilityQuery = `
+        SELECT Availability
+        FROM ${itemTable}
+        WHERE ${itemIDColumn} = ?
       `;
-      db.query(checkAvailabilityQuery, [itemIDValue], (error, results) => {
-        if (error) {
-          console.error('Error checking availability:', error);
-          return res.status(500).json({ message: 'Internal server error.' });
-        }
+      const [availabilityResults] = await db.promise().query(availabilityQuery, [itemIDValue]);
 
-        if (results.length === 0) {
-          return res.status(404).json({ message: 'Item not found.' });
-        }
+      if (availabilityResults.length === 0) {
+        return res.status(404).json({ message: 'Item not found.' });
+      }
 
-        if (results[0].Availability !== 'Available') {
-          return res.status(400).json({ message: 'Item is not available.' });
-        }
+      if (availabilityResults[0].Availability !== 'Available') {
+        return res.status(400).json({ message: 'Item is not available.' });
+      }
 
-        // Proceed to create BorrowRecord
-        generateBorrowRecordID((error, newBorrowRecordID) => {
-          if (error) {
-            return res.status(500).json({ message: 'Error generating BorrowRecordID.' });
-          }
+      // Generate BorrowRecordID
+      const newBorrowRecordID = await generateBorrowRecordID();
 
-          const createdAt = formatDateToMySQL(new Date()); // Format the current date to YYYY-MM-DD
-          const lastUpdated = formatDateToMySQL(new Date()); // Set LastUpdated to current date
+      const createdAt = formatDateToMySQL(new Date());
+      const lastUpdated = formatDateToMySQL(new Date());
 
-          // Automatically set the borrow date to today's date
-          const formattedBorrowDate = formatDateToMySQL(new Date());
-          // Automatically set the due date to two weeks from today
-          const dueDate = new Date();
-          dueDate.setDate(dueDate.getDate() + 14);
-          const formattedDueDate = formatDateToMySQL(dueDate);
-          // Will be set by the user when the item is returned
-          const formattedReturnDate = null;
+      // Set BorrowDate to today and DueDate to two weeks from today
+      const formattedBorrowDate = formatDateToMySQL(new Date());
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14);
+      const formattedDueDate = formatDateToMySQL(dueDate);
+      const formattedReturnDate = null; // Not returned yet
 
-          // SQL query to insert the borrow record into the database
-          const insertBorrowRecordQuery = `
-            INSERT INTO BorrowRecord (
-              BorrowRecordID, 
-              UserID, 
-              ${borrowRecordItemColumn}, 
-              BorrowDate, 
-              DueDate, 
-              ReturnDate, 
-              FineAmount, 
-              CreatedBy, 
-              CreatedAt,
-              UpdatedBy,
-              LastUpdated
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `;
+      // Insert BorrowRecord
+      const insertBorrowRecordQuery = `
+        INSERT INTO BorrowRecord (
+          BorrowRecordID, 
+          UserID, 
+          ${borrowRecordItemColumn}, 
+          BorrowDate, 
+          DueDate, 
+          ReturnDate, 
+          FineAmount, 
+          CreatedBy, 
+          CreatedAt,
+          UpdatedBy,
+          LastUpdated,
+          Status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')
+      `;
+      const borrowRecordValues = [
+        newBorrowRecordID,
+        userID,
+        itemIDValue,
+        formattedBorrowDate,
+        formattedDueDate,
+        formattedReturnDate,
+        0, // FineAmount set to 0
+        'user', // CreatedBy set to 'user'
+        createdAt,
+        'user', // UpdatedBy set to 'user'
+        lastUpdated,
+      ];
 
-          db.query(
-            insertBorrowRecordQuery,
-            [
-              newBorrowRecordID,
-              userID,
-              itemIDValue,
-              formattedBorrowDate,
-              formattedDueDate,
-              formattedReturnDate, // Set ReturnDate to DueDate
-              0, // FineAmount set to 0
-              'user', // CreatedBy set to 'user'
-              createdAt,
-              'user', // UpdatedBy set to 'user'
-              lastUpdated,
-            ],
-            (error, results) => {
-              if (error) {
-                console.error('Error inserting borrow record:', error);
-                return res.status(500).json({ message: 'Internal server error.' });
-              }
+      await db.promise().query(insertBorrowRecordQuery, borrowRecordValues);
 
-              // Update the item's availability to 'Checked Out'
-              const updateAvailabilityQuery = `
-                UPDATE ${itemTable} SET Availability = 'Checked Out' WHERE ${itemIDColumn} = ?
-              `;
-              db.query(updateAvailabilityQuery, [itemIDValue], (error, results) => {
-                if (error) {
-                  console.error('Error updating item availability:', error);
-                  return res.status(500).json({ message: 'Internal server error.' });
-                }
+      // Update item's availability to 'Checked Out'
+      const updateAvailabilityQuery = `
+        UPDATE ${itemTable} 
+        SET Availability = 'Checked Out' 
+        WHERE ${itemIDColumn} = ?
+      `;
+      await db.promise().query(updateAvailabilityQuery, [itemIDValue]);
 
-                res.status(201).json({ message: 'Item borrowed successfully!' });
-              });
-            }
-          );
-        });
-      });
-    });
+      res.status(201).json({ message: 'Item borrowed successfully!' });
+    } catch (error) {
+      console.error('Error processing borrow request:', error);
+      res.status(500).json({ message: 'Internal server error.' });
+    }
   } else {
     res.setHeader('Allow', ['POST']);
     res.status(405).end(`Method ${req.method} Not Allowed`);

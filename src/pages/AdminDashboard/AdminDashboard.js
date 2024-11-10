@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import './AdminDashboard.css'; // Import the external CSS file
+import './AdminDashboard.css';
 
 const itemFields = {
   BorrowRecord: [
-    { label: 'Borrow Record ID', key: 'BorrowRecordID' },
+    { label: 'Borrow Record ID', key: 'BorrowRecordID', readOnly: true },
     { label: 'User ID', key: 'UserID' },
-    { label: 'Book ISBN', key: 'BookISBN' },
-    { label: 'Device ID', key: 'DeviceID' },
-    { label: 'Magazine ID', key: 'MagID' },
-    { label: 'Media ID', key: 'MediaID' },
+    { label: 'Book ISBN', key: 'BookISBN', isOptional: true },
+    { label: 'Device ID', key: 'DeviceID', isOptional: true },
+    { label: 'Magazine ID', key: 'MagID', isOptional: true },
+    { label: 'Media ID', key: 'MediaID', isOptional: true },
     { label: 'Borrow Date', key: 'BorrowDate', isDate: true },
     { label: 'Due Date', key: 'DueDate', isDate: true },
-    { label: 'Return Date', key: 'ReturnDate', isDate: true },
+    { label: 'Return Date', key: 'ReturnDate', isDate: true, isOptional: true },
+    { label: 'Status', key: 'Status' },
     { label: 'Fine Amount', key: 'FineAmount', isCurrency: true },
   ],
   ItemBook: [
-    { label: 'Book ID', key: 'BookID' },
+    { label: 'Book ID', key: 'BookID', readOnly: true },
     { label: 'ISBN', key: 'ISBN' },
     { label: 'Title', key: 'Title' },
     { label: 'Author', key: 'Author' },
@@ -26,7 +27,7 @@ const itemFields = {
     { label: 'Availability', key: 'Availability' },
   ],
   ItemDevices: [
-    { label: 'Device ID', key: 'DeviceID' },
+    { label: 'Device ID', key: 'DeviceID', readOnly: true },
     { label: 'Title', key: 'Title' },
     { label: 'Brand', key: 'Brand' },
     { label: 'Model', key: 'Model' },
@@ -36,7 +37,7 @@ const itemFields = {
     { label: 'Availability', key: 'Availability' },
   ],
   ItemMagazine: [
-    { label: 'Magazine ID', key: 'MagazineID' },
+    { label: 'Magazine ID', key: 'MagazineID', readOnly: true },
     { label: 'ISSN', key: 'ISSN' },
     { label: 'Title', key: 'Title' },
     { label: 'Author', key: 'Author' },
@@ -46,7 +47,7 @@ const itemFields = {
     { label: 'Availability', key: 'Availability' },
   ],
   ItemMedia: [
-    { label: 'Media ID', key: 'MediaID' },
+    { label: 'Media ID', key: 'MediaID', readOnly: true },
     { label: 'Title', key: 'Title' },
     { label: 'Media Type', key: 'MediaType' },
     { label: 'Duration', key: 'Duration', isDuration: true },
@@ -55,7 +56,7 @@ const itemFields = {
     { label: 'Availability', key: 'Availability' },
   ],
   Users: [
-    { label: 'User ID', key: 'UserID' },
+    { label: 'User ID', key: 'UserID', readOnly: true },
     { label: 'Role', key: 'Role' },
     { label: 'First Name', key: 'FirstName' },
     { label: 'Last Name', key: 'LastName' },
@@ -72,7 +73,7 @@ const itemFields = {
     { label: 'Suspended', key: 'Suspended', isBoolean: true },
   ],
   Employee: [
-    { label: 'Employee ID', key: 'EmployeeID' },
+    { label: 'Employee ID', key: 'EmployeeID', readOnly: true },
     { label: 'User ID', key: 'UserID' },
     { label: 'First Name', key: 'FirstName' },
     { label: 'Last Name', key: 'LastName' },
@@ -155,7 +156,9 @@ const AdminDashboard = () => {
       if (field.isBoolean) {
         // Convert to boolean
         processedItem[field.key] =
-          processedItem[field.key] === '1' || processedItem[field.key] === 1 || processedItem[field.key] === true;
+          processedItem[field.key] === '1' ||
+          processedItem[field.key] === 1 ||
+          processedItem[field.key] === true;
       }
     });
 
@@ -184,8 +187,29 @@ const AdminDashboard = () => {
     }
   };
 
+  const validateForm = () => {
+    if (currentItemType === 'BorrowRecord') {
+      const { BookISBN, DeviceID, MagID, MediaID } = formData;
+      if (
+        (!BookISBN || BookISBN.trim() === '') &&
+        (!DeviceID || DeviceID.trim() === '') &&
+        (!MagID || MagID.trim() === '') &&
+        (!MediaID || MediaID.trim() === '')
+      ) {
+        alert('At least one of Book ISBN, Device ID, Magazine ID, or Media ID must be provided.');
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       const method = isEditing ? 'PUT' : 'POST';
       const dataToSend = { ...formData };
@@ -203,13 +227,25 @@ const AdminDashboard = () => {
         }
       });
 
+      // Handle nullable fields: Convert empty strings to null
+      Object.keys(dataToSend).forEach((key) => {
+        if (
+          dataToSend[key] === '' ||
+          dataToSend[key] === undefined ||
+          dataToSend[key] === null
+        ) {
+          dataToSend[key] = null;
+        }
+      });
+
       const response = await fetch(`/api/pullAPI?table=${currentItemType}`, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend),
       });
       if (!response.ok) {
-        throw new Error(`Failed to ${isEditing ? 'update' : 'add'} item`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'add'} item`);
       }
       await response.json();
       fetchItems(currentItemType);
@@ -297,7 +333,7 @@ const AdminDashboard = () => {
                     name={field.key}
                     checked={!!formData[field.key]}
                     onChange={(e) => handleInputChange(e, field)}
-                    disabled={isEditing && field.key === itemFields[currentItemType][0].key}
+                    disabled={isEditing && field.readOnly}
                   />
                 ) : (
                   <input
@@ -316,9 +352,9 @@ const AdminDashboard = () => {
                         ? formData[field.key]
                         : formData[field.key] || ''
                     }
-                    onChange={handleInputChange}
-                    required
-                    disabled={isEditing && field.key === itemFields[currentItemType][0].key}
+                    onChange={(e) => handleInputChange(e, field)}
+                    required={!field.isOptional && !field.readOnly}
+                    disabled={isEditing && field.readOnly}
                   />
                 )}
               </label>

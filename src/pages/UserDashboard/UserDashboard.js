@@ -50,8 +50,12 @@ const UserDashboard = () => {
   const [viewBorrowedItems, setViewBorrowedItems] = useState(false); // false, 'active', or 'history'
   const [borrowedItems, setBorrowedItems] = useState([]);
 
-  // Define fetchBalance at the component level so it can be accessed by other functions
-  const fetchBalance = async () => {
+  // New state variables for borrow limit and active borrow count
+  const [borrowLimit, setBorrowLimit] = useState(null);
+  const [activeBorrowCount, setActiveBorrowCount] = useState(0);
+
+  // Define fetchBalance and fetchUserInfo at the component level so they can be accessed by other functions
+  const fetchUserInfo = async () => {
     if (!userID) {
       // User is not logged in, redirect to login page
       navigate('/login');
@@ -59,7 +63,7 @@ const UserDashboard = () => {
     }
 
     try {
-      const response = await fetch('/api/getBalance', {
+      const response = await fetch('/api/getUserInfo', { // Merged API endpoint
         method: 'GET',
         headers: {
           'x-user-id': userID, // Send userID in custom header
@@ -69,23 +73,24 @@ const UserDashboard = () => {
       const data = await response.json();
 
       if (response.ok) {
-        console.log('Fetched balance:', data.balance, 'Suspended:', data.suspended);
-        const numericBalance = parseFloat(data.balance);
-        setBalance(numericBalance);
-        setSuspended(data.suspended); // Set suspended status
+        console.log('Fetched user info:', data);
+        setBalance(data.balance);
+        setSuspended(data.suspended);
+        setBorrowLimit(data.borrowLimit);
+        setActiveBorrowCount(data.activeBorrowCount);
       } else {
-        setMessage(data.message || 'Failed to fetch balance');
+        setMessage(data.message || 'Failed to fetch user info');
       }
     } catch (error) {
-      console.error('Error fetching balance:', error);
-      setMessage('An error occurred while fetching balance');
+      console.error('Error fetching user info:', error);
+      setMessage('An error occurred while fetching user info');
     }
   };
 
-  // Fetch the user's balance when the component mounts or when userID changes
+  // Fetch the user's info when the component mounts or when userID changes
   useEffect(() => {
     if (userID) {
-      fetchBalance();
+      fetchUserInfo();
     }
   }, [userID, navigate]);
 
@@ -126,6 +131,12 @@ const UserDashboard = () => {
       return;
     }
 
+    // Check if user has reached their borrow limit
+    if (borrowLimit !== null && activeBorrowCount >= borrowLimit) {
+      setMessage(`You have reached your borrow limit of ${borrowLimit} items.`);
+      return;
+    }
+
     // Confirmation dialog
     const confirmBorrow = window.confirm(`Do you want to borrow "${item.Title || item.Name || 'this item'}"?`);
     if (!confirmBorrow) {
@@ -154,22 +165,28 @@ const UserDashboard = () => {
         body: JSON.stringify(borrowData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to borrow item');
-      }
-
       const result = await response.json();
-      console.log('Borrowed item successfully:', result);
-      setMessage('Item borrowed successfully!');
 
-      // Refresh items and balance after borrowing
-      fetchItems(currentItemType);
-      fetchBorrowedItems(viewBorrowedItems);
-      fetchBalance();
+      if (response.ok) {
+        console.log('Borrowed item successfully:', result);
+        setMessage('Item borrowed successfully!');
+        // Update active borrow count
+        setActiveBorrowCount(prevCount => prevCount + 1);
+        // Refresh items and balance after borrowing
+        fetchItems(currentItemType);
+        fetchBorrowedItems(viewBorrowedItems);
+        fetchUserInfo(); // Refresh user info to ensure consistency
+      } else {
+        // Handle specific error messages from the backend
+        if (result.message.includes('borrow limit')) {
+          setMessage(result.message);
+        } else {
+          setMessage(result.message || 'Failed to borrow item');
+        }
+      }
     } catch (error) {
       console.error('Error borrowing item:', error);
-      setMessage(error.message);
+      setMessage('An error occurred while borrowing the item');
     }
   };
 
@@ -192,21 +209,23 @@ const UserDashboard = () => {
         body: JSON.stringify(returnData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to return item');
-      }
-
       const result = await response.json();
-      console.log('Returned item successfully:', result);
-      setMessage('Item returned successfully!');
 
-      // Refresh borrowed items and balance after returning
-      fetchBorrowedItems(viewBorrowedItems);
-      fetchBalance();
+      if (response.ok) {
+        console.log('Returned item successfully:', result);
+        setMessage('Item returned successfully!');
+        // Update active borrow count
+        setActiveBorrowCount(prevCount => Math.max(prevCount - 1, 0));
+        // Refresh borrowed items and balance after returning
+        fetchBorrowedItems(viewBorrowedItems);
+        fetchUserInfo(); // Refresh user info to ensure consistency
+      } else {
+        // Handle specific error messages from the backend
+        setMessage(result.message || 'Failed to return item');
+      }
     } catch (error) {
       console.error('Error returning item:', error);
-      setMessage(error.message);
+      setMessage('An error occurred while returning the item');
     }
   };
 
@@ -270,6 +289,14 @@ const UserDashboard = () => {
           </div>
         )}
 
+        {/* Display borrow limit and active borrow count */}
+        {borrowLimit !== null && (
+          <div className="borrow-limit-container">
+            <p>Borrow Limit: {borrowLimit}</p>
+            <p>Currently Borrowed: {activeBorrowCount}</p>
+          </div>
+        )}
+
         {/* Display any messages */}
         {message && <p className="message">{message}</p>}
 
@@ -278,32 +305,56 @@ const UserDashboard = () => {
           <button
             className={currentItemType === 'ItemBook' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemBook')}
-            disabled={suspended} // Disable if suspended
-            title={suspended ? 'Cannot borrow while suspended' : 'Borrow Books'}
+            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)} // Disable if suspended or limit reached
+            title={
+              suspended
+                ? 'Cannot borrow while suspended'
+                : (borrowLimit !== null && activeBorrowCount >= borrowLimit
+                  ? 'Borrow limit reached'
+                  : 'Borrow Books')
+            }
           >
             Books
           </button>
           <button
             className={currentItemType === 'ItemDevices' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemDevices')}
-            disabled={suspended}
-            title={suspended ? 'Cannot borrow while suspended' : 'Borrow Devices'}
+            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
+            title={
+              suspended
+                ? 'Cannot borrow while suspended'
+                : (borrowLimit !== null && activeBorrowCount >= borrowLimit
+                  ? 'Borrow limit reached'
+                  : 'Borrow Devices')
+            }
           >
             Devices
           </button>
           <button
             className={currentItemType === 'ItemMagazine' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemMagazine')}
-            disabled={suspended}
-            title={suspended ? 'Cannot borrow while suspended' : 'Borrow Magazines'}
+            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
+            title={
+              suspended
+                ? 'Cannot borrow while suspended'
+                : (borrowLimit !== null && activeBorrowCount >= borrowLimit
+                  ? 'Borrow limit reached'
+                  : 'Borrow Magazines')
+            }
           >
             Magazines
           </button>
           <button
             className={currentItemType === 'ItemMedia' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemMedia')}
-            disabled={suspended}
-            title={suspended ? 'Cannot borrow while suspended' : 'Borrow Media'}
+            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
+            title={
+              suspended
+                ? 'Cannot borrow while suspended'
+                : (borrowLimit !== null && activeBorrowCount >= borrowLimit
+                  ? 'Borrow limit reached'
+                  : 'Borrow Media')
+            }
           >
             Media
           </button>
@@ -414,8 +465,14 @@ const UserDashboard = () => {
                     <td>
                       <button
                         onClick={() => borrowItem(item)}
-                        disabled={suspended} // Disable if suspended
-                        title={suspended ? 'Cannot borrow while suspended' : 'Borrow this item'}
+                        disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)} // Disable if suspended or limit reached
+                        title={
+                          suspended
+                            ? 'Cannot borrow while suspended'
+                            : (borrowLimit !== null && activeBorrowCount >= borrowLimit
+                              ? 'Borrow limit reached'
+                              : 'Borrow this item')
+                        }
                       >
                         Borrow
                       </button>
