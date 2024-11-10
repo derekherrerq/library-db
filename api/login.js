@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: './test.env' }); // Load environment variables
+dotenv.config({ path: './test.env' });
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {

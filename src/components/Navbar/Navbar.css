@@ -4,15 +4,14 @@
 	box-sizing: border-box;
   }
   
-  /* Style for the brand text */
   .brand-text {
-	font-size: 1.5rem; /* Larger font size for prominence */
+	font-size: 1.5rem;
 	font-weight: bold;
-	color: #333333; /* Dark text color */
+	color: #333333;
   }
   
   :root {
-	--navbar-height: 60px; /* Define the height of the navbar */
+	--navbar-height: 60px;
   }
   
   .main-nav {
@@ -28,14 +27,12 @@
 	align-items: center;
   }  
   
-  /* Ensure the navbar expands properly */
   .main-nav .navbar-collapse {
-	justify-content: flex-end; /* Aligns nav items to the right */
+	justify-content: flex-end;
   }
   
-  /* Style for navigation links */
   .navbar-light .navbar-nav .nav-link {
-	color: #333333; /* Dark text color */
+	color: #333333;
 	font-weight: 500;
 	margin-left: 1rem;
 	transition: color 0.3s ease;
@@ -43,10 +40,9 @@
   
   .navbar-light .navbar-nav .nav-link:hover,
   .navbar-light .navbar-nav .nav-link.active {
-	color: #007bff; /* Blue color on hover and active */
+	color: #007bff;
   }
   
-  /* Style for the toggle (hamburger) icon */
   .navbar-toggler {
 	border: none;
   }
@@ -56,13 +52,12 @@
   }
   
   .navbar-toggler .fas {
-	color: #333333; /* Icon color */
+	color: #333333;
   }
   
-  /* Style for the login/logout button */
   .main-nav .button {
-	background-color: #007bff; /* Blue background */
-	color: #ffffff; /* White text */
+	background-color: #007bff;
+	color: #ffffff;
 	border: none;
 	border-radius: 5px;
 	padding: 8px 20px;
@@ -73,10 +68,9 @@
   }
   
   .main-nav .button:hover {
-	background-color: #0056b3; /* Darker blue on hover */
+	background-color: #0056b3;
   }
   
-  /* Remove logo-specific styles */
   .App-logo {
 	display: none;
   }

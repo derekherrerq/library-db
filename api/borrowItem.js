@@ -1,7 +1,7 @@
 const mysql = require('mysql2');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: './test.env' }); // Load environment variables only once
+dotenv.config({ path: './test.env' });
 
 // Create a MySQL connection pool (persistent connection)
 const db = mysql.createPool({
