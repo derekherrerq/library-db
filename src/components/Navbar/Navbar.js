@@ -26,21 +26,28 @@ const NavBar = () => {
       <Navbar.Toggle aria-controls="responsive-navbar-nav">
         <i className="fas fa-bars fa-lg"></i>
       </Navbar.Toggle>
-      
-      <Navbar.Collapse id="responsive-navbar-nav">
-        {/* Left-aligned Nav Links */}
-        <Nav className="mr-auto">
-          <ActiveListItem url="/" name="Home" />
-          {isAuthenticated && (
+      <Navbar.Collapse id='responsive-navbar-nav'>
+        <Nav className='ml-auto'>
+          <ActiveListItem url='/' name='Home' />
+          {isAuthenticated ? (
             <>
               {role === 'admin' && (
-                <ActiveListItem url="/admin-dashboard" name="Admin Dashboard" />
+                <ActiveListItem url='/admin-dashboard' name='Admin Dashboard' />
               )}
               {role === 'staff' && (
-                <ActiveListItem url="/staff-dashboard" name="Staff Dashboard" />
+                <ActiveListItem url='/staff-dashboard' name='Staff Dashboard' />
               )}
-              <ActiveListItem url="/user-dashboard" name="User Dashboard" />
+              <ActiveListItem url='/user-dashboard' name='User Dashboard' />
+              <Nav.Link onClick={logout}>
+                <button className='button'>Logout</button>
+              </Nav.Link>
             </>
+          ) : (
+            <LinkContainer to='/login'>
+              <Nav.Link>
+                <button className='button'>Login</button>
+              </Nav.Link>
+            </LinkContainer>
           )}
         </Nav>
 
