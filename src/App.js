@@ -1,125 +1,75 @@
-//import logo from './logo.svg';
-import './App.css';
+import React, { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import FourOFour from './components/404/FourOFour';
+import { initialize } from './utils/reactGA';
+import { AuthProvider } from './components/Authentication/AuthContext';
+import PrivateRoute from './components/Authentication/PrivateRoute';
 
+const NavBar = lazy(() => import('./components/Navbar/Navbar'));
+const Home = lazy(() => import('./pages/Home/Home'));
+const Login = lazy(() => import('./pages/Login/Login'));
+const Register = lazy(() => import('./pages/Register/Register'));
+const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
+const UserDashboard = lazy(() => import('./pages/UserDashboard/UserDashboard'));
+const StaffDashboard = lazy(() => import('./pages/StaffDashboard/StaffDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard/AdminDashboard'));
 
-// Data storage for items and users
-let items = [];
-let users = [];
+const App = () => {
+  initialize();
+  return (
+    <AuthProvider>
+      <Router>
+        <Suspense fallback={<div>Loading...</div>}>
+          <NavBar />
+          <div className="main-content">
+            <Routes>
+              {/* Protected Home Route */}
+              <Route
+                path="/"
+                element={
+                  <PrivateRoute>
+                    <Home />
+                  </PrivateRoute>
+                }
+              />
 
-// Function to add item
-function addItem() {
-    const title = document.getElementById('item-title').value;
-    const type = document.getElementById('item-type').value;
-    const copies = document.getElementById('item-copies').value;
+              {/* Protected Dashboard Routes */}
+              <Route
+                path="/user-dashboard"
+                element={
+                  <PrivateRoute requiredRole="user">
+                    <UserDashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/staff-dashboard"
+                element={
+                  <PrivateRoute requiredRole="staff">
+                    <StaffDashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin-dashboard"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <AdminDashboard />
+                  </PrivateRoute>
+                }
+              />
 
-    const newItem = { id: Date.now(), title, type, copies: parseInt(copies) };
-    items.push(newItem);
-    displayItems();
-    clearItemForm();
-}
-
-// Function to display items
-function displayItems() {
-    const itemList = document.getElementById('item-list');
-    itemList.innerHTML = '';
-    items.forEach(item => {
-        const itemElement = document.createElement('li');
-        itemElement.innerHTML = `
-            ${item.title} - ${item.type} - Copies: ${item.copies}
-            <button class="update-btn" onclick="updateCopies(${item.id})">Update Copies</button>
-            <button class="delete-btn" onclick="deleteItem(${item.id})">Delete</button>
-        `;
-        itemList.appendChild(itemElement);
-    });
-}
-
-// Function to update copies
-function updateCopies(id) {
-    const newCopies = prompt('Enter new number of copies:');
-    const item = items.find(i => i.id === id);
-    if (item) {
-        item.copies = parseInt(newCopies);
-        displayItems();
-    }
-}
-
-// Function to delete item
-function deleteItem(id) {
-    items = items.filter(item => item.id !== id);
-    displayItems();
-}
-
-// Clear item form
-function clearItemForm() {
-    document.getElementById('item-title').value = '';
-    document.getElementById('item-type').value = '';
-    document.getElementById('item-copies').value = '';
-}
-
-// Function to add user
-function addUser() {
-    const name = document.getElementById('user-name').value;
-    const borrowingLimit = document.getElementById('borrowing-limit').value;
-
-    const newUser = { id: Date.now(), name, borrowingLimit: parseInt(borrowingLimit), fines: 0 };
-    users.push(newUser);
-    displayUsers();
-    clearUserForm();
-}
-
-// Function to display users
-function displayUsers() {
-    const userList = document.getElementById('user-list');
-    userList.innerHTML = '';
-    users.forEach(user => {
-        const userElement = document.createElement('li');
-        userElement.innerHTML = `
-            ${user.name} - Borrowing Limit: ${user.borrowingLimit}, Fines: $${user.fines}
-            <button class="update-btn" onclick="updateBorrowingLimit(${user.id})">Edit Borrowing Limit</button>
-            <button class="delete-btn" onclick="clearFines(${user.id})">Clear Fines</button>
-        `;
-        userList.appendChild(userElement);
-    });
-}
-
-// Function to update borrowing limit
-function updateBorrowingLimit(id) {
-    const newLimit = prompt('Enter new borrowing limit:');
-    const user = users.find(u => u.id === id);
-    if (user) {
-        user.borrowingLimit = parseInt(newLimit);
-        displayUsers();
-    }
-}
-
-// Function to clear fines
-function clearFines(id) {
-    const user = users.find(u => u.id === id);
-    if (user) {
-        user.fines = 0;
-        displayUsers();
-    }
-}
-
-// Clear user form
-function clearUserForm() {
-    document.getElementById('user-name').value = '';
-    document.getElementById('borrowing-limit').value = '';
-}
-
-
-function App() {
-  addItem();
-  displayItems();
-  updateCopies();
-  deleteItem();
-  clearItemForm();
-  addUser();
-  displayUsers();
-  updateBorrowingLimit();
-  clearFines();
-  clearUserForm();
-
-}
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/404" element={<NotFound />} />
+              <Route path="*" element={<FourOFour />} />
+            </Routes>
+          </div>
+        </Suspense>
+      </Router>
+    </AuthProvider>
+  );
+};
 
 export default App;
