@@ -1,27 +1,32 @@
+/* src/pages/Login.css */
+
+/* Style for the entire login page container */
 .login-container {
 	display: flex;
-	justify-content: center;
-	align-items: center;
-	height: 100vh;
-	background-color: #f0f2f5;
+	justify-content: center; /* Center horizontally */
+	align-items: center;    /* Center vertically */
+	height: 100vh;          /* Full viewport height */
+	background-color: #f0f2f5; /* Light background color */
   }
   
+  /* Style for the login form box */
   .login-form {
-	background-color: #ffffff;
-	padding: 40px;
-	border-radius: 8px;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	background-color: #ffffff; /* White background */
+	padding: 40px;             /* Inner spacing */
+	border-radius: 8px;        /* Rounded corners */
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 	width: 100%;
-	max-width: 400px;
+	max-width: 400px;          /* Max width for responsiveness */
 	display: flex;
 	flex-direction: column;
 	animation: fade-up 0.5s ease-out;
   }
   
+  /* Style for form controls (labels and inputs) */
   .form-control {
 	display: flex;
 	flex-direction: column;
-	margin-bottom: 20px;
+	margin-bottom: 20px; /* Spacing between fields */
   }
   
   .form-control label {
@@ -38,15 +43,16 @@
   }
   
   .form-control input:focus {
-	border-color: #007bff;
+	border-color: #007bff; /* Blue border on focus */
 	outline: none;
-	box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+	box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* Focus shadow */
   }
   
+  /* Style for the login button */
   .login-form button {
 	padding: 12px;
-	background-color: #007bff;
-	color: #ffffff;
+	background-color: #007bff; /* Blue background */
+	color: #ffffff;            /* White text */
 	border: none;
 	border-radius: 4px;
 	font-size: 16px;
@@ -55,15 +61,17 @@
   }
   
   .login-form button:hover {
-	background-color: #0056b3;
+	background-color: #0056b3; /* Darker blue on hover */
   }
   
+  /* Style for error messages */
   .error-msg {
-	color: #ff0000;
+	color: #ff0000; /* Red text for errors */
 	margin-bottom: 20px;
 	text-align: center;
   }
   
+  /* Fade-up animation */
   @keyframes fade-up {
 	0% {
 	  opacity: 0;
@@ -74,19 +82,4 @@
 	  transform: translateY(0px) scale(1);
 	}
   }
-
-  .registration-text {
-	margin-top: 15px;
-	text-align: center;
-	font-size: 0.9em;
-	color: #007bff;
-	cursor: pointer;
-  }
   
-  .registration-text span {
-	text-decoration: underline;
-  }
-  
-  .registration-text:hover span {
-	color: #0056b3;
-  }  
