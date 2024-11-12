@@ -20,7 +20,7 @@ Ensure you have [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/)
    ```
 
 2. **Environment Variables**  
-   Create a `.env` file in the root directory and define the following environment variables required for database connection:
+   Create a `test.env` file in the root directory and define the following environment variables required for database connection:
 
    ```plaintext
    DB_HOST=
