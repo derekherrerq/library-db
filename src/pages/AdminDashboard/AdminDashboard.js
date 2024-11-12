@@ -91,6 +91,22 @@ const itemFields = {
     { label: 'Supervised By Name', key: 'supervised_by_name' },
     { label: 'Supervised By Employee ID', key: 'supervised_by_employee_id' },
   ],
+  UserFinesReport: [
+    { label: 'User ID', key: 'UserID' },
+    { label: 'First Name', key: 'FirstName' },
+    { label: 'Last Name', key: 'LastName' },
+    { label: 'Email', key: 'Email' },
+    { label: 'Phone Number', key: 'PhoneNumber' },
+    { label: 'User Balance', key: 'UserBalance', isCurrency: true },
+    { label: 'Borrow Record ID', key: 'BorrowRecordID' },
+    { label: 'Borrow Date', key: 'BorrowDate', isDate: true },
+    { label: 'Due Date', key: 'DueDate', isDate: true },
+    { label: 'Return Date', key: 'ReturnDate', isDate: true },
+    { label: 'Fine Amount', key: 'FineAmount', isCurrency: true },
+    { label: 'Status', key: 'Status' },
+    { label: 'Item Title', key: 'ItemTitle' },
+    { label: 'Item Type', key: 'ItemType' },
+  ],
 };
 
 const AdminDashboard = () => {
@@ -102,7 +118,13 @@ const AdminDashboard = () => {
 
   const fetchItems = async (table) => {
     try {
-      const response = await fetch(`/api/pullAPI?table=${table}`);
+      let response;
+      if (table === 'UserFinesReport') {
+        response = await fetch(`/api/userFinesReport`);
+      } else {
+        response = await fetch(`/api/pullAPI?table=${table}`);
+      }
+
       if (!response.ok) {
         throw new Error(`Failed to fetch ${table} data`);
       }
@@ -272,6 +294,7 @@ const AdminDashboard = () => {
           <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
           <button onClick={() => handleItemTypeChange('Users')}>Users</button>
           <button onClick={() => handleItemTypeChange('Employee')}>Employee</button>
+          <button onClick={() => handleItemTypeChange('UserFinesReport')}>User Fines Report</button>
         </div>
 
         {itemsData.length > 0 ? (
@@ -282,12 +305,12 @@ const AdminDashboard = () => {
                   {itemFields[currentItemType].map((field) => (
                     <th key={field.key}>{field.label}</th>
                   ))}
-                  <th>Actions</th>
+                  {currentItemType !== 'UserFinesReport' && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
-                {itemsData.map((item) => (
-                  <tr key={item[itemFields[currentItemType][0].key]}>
+                {itemsData.map((item, index) => (
+                  <tr key={index}>
                     {itemFields[currentItemType].map((field) => {
                       let value = item[field.key];
 
@@ -307,14 +330,18 @@ const AdminDashboard = () => {
 
                       return <td key={field.key}>{value}</td>;
                     })}
-                    <td>
-                      <button onClick={() => handleEdit(item)}>Edit</button>
-                      <button
-                        onClick={() => handleDelete(item[itemFields[currentItemType][0].key])}
-                      >
-                        Delete
-                      </button>
-                    </td>
+                    {currentItemType !== 'UserFinesReport' && (
+                      <td>
+                        <button onClick={() => handleEdit(item)}>Edit</button>
+                        <button
+                          onClick={() =>
+                            handleDelete(item[itemFields[currentItemType][0].key])
+                          }
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -325,56 +352,60 @@ const AdminDashboard = () => {
         )}
 
         {/* Form to add or edit items */}
-        <h2>
-          {isEditing ? 'Edit' : 'Add New'} {currentItemType}
-        </h2>
-        <form onSubmit={handleFormSubmit} className="dashboard-form">
-          {itemFields[currentItemType].map((field) => (
-            <div key={field.key} className="form-control">
-              <label>
-                {field.label}:
-                {field.isBoolean ? (
-                  <input
-                    type="checkbox"
-                    name={field.key}
-                    checked={!!formData[field.key]}
-                    onChange={(e) => handleInputChange(e, field)}
-                    disabled={isEditing && field.readOnly}
-                  />
-                ) : (
-                  <input
-                    type={
-                      field.isDate
-                        ? 'date'
-                        : field.isCurrency
-                        ? 'number'
-                        : field.key.toLowerCase().includes('email')
-                        ? 'email'
-                        : 'text'
-                    }
-                    name={field.key}
-                    value={
-                      field.isDate && formData[field.key]
-                        ? formData[field.key]
-                        : formData[field.key] || ''
-                    }
-                    onChange={(e) => handleInputChange(e, field)}
-                    required={!field.isOptional && !field.readOnly}
-                    disabled={isEditing && field.readOnly}
-                  />
+        {currentItemType !== 'UserFinesReport' && (
+          <>
+            <h2>
+              {isEditing ? 'Edit' : 'Add New'} {currentItemType}
+            </h2>
+            <form onSubmit={handleFormSubmit} className="dashboard-form">
+              {itemFields[currentItemType].map((field) => (
+                <div key={field.key} className="form-control">
+                  <label>
+                    {field.label}:
+                    {field.isBoolean ? (
+                      <input
+                        type="checkbox"
+                        name={field.key}
+                        checked={!!formData[field.key]}
+                        onChange={(e) => handleInputChange(e, field)}
+                        disabled={isEditing && field.readOnly}
+                      />
+                    ) : (
+                      <input
+                        type={
+                          field.isDate
+                            ? 'date'
+                            : field.isCurrency
+                            ? 'number'
+                            : field.key.toLowerCase().includes('email')
+                            ? 'email'
+                            : 'text'
+                        }
+                        name={field.key}
+                        value={
+                          field.isDate && formData[field.key]
+                            ? formData[field.key]
+                            : formData[field.key] || ''
+                        }
+                        onChange={(e) => handleInputChange(e, field)}
+                        required={!field.isOptional && !field.readOnly}
+                        disabled={isEditing && field.readOnly}
+                      />
+                    )}
+                  </label>
+                </div>
+              ))}
+              <div className="form-buttons">
+                <button type="submit">{isEditing ? 'Update' : 'Add'}</button>
+                {isEditing && (
+                  <button type="button" onClick={handleAddNew}>
+                    Cancel
+                  </button>
                 )}
-              </label>
-            </div>
-          ))}
-          <div className="form-buttons">
-            <button type="submit">{isEditing ? 'Update' : 'Add'}</button>
-            {isEditing && (
-              <button type="button" onClick={handleAddNew}>
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
