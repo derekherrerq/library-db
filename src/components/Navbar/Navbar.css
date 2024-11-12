@@ -1,41 +1,38 @@
-/* src/components/Navbar/Navbar.css */
-
-/* Reset default margins and paddings */
 * {
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
   }
   
-  /* Style for the brand text */
   .brand-text {
-	font-size: 1.5rem; /* Larger font size for prominence */
+	font-size: 1.5rem;
 	font-weight: bold;
-	color: #333333; /* Dark text color */
+	color: #333333;
   }
   
-  /* Main navbar styling */
+  :root {
+	--navbar-height: 60px;
+  }
+  
   .main-nav {
-	background-color: #ffffff; /* White background */
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-	padding: 0.5rem 1rem; /* Vertical and horizontal padding */
-	position: fixed; /* Fixes the navbar to the top */
+	height: var(--navbar-height);
+	padding: 0.5rem 1rem;
+	position: fixed;
 	top: 0;
-	width: 100%; /* Full width */
-	height: 60px; /* Fixed height */
-	z-index: 1000; /* Ensures navbar stays above other elements */
+	width: 100%;
+	background-color: #ffffff;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	z-index: 1000;
 	display: flex;
-	align-items: center; /* Vertically centers content */
-  }
+	align-items: center;
+  }  
   
-  /* Ensure the navbar expands properly */
   .main-nav .navbar-collapse {
-	justify-content: flex-end; /* Aligns nav items to the right */
+	justify-content: flex-end;
   }
   
-  /* Style for navigation links */
   .navbar-light .navbar-nav .nav-link {
-	color: #333333; /* Dark text color */
+	color: #333333;
 	font-weight: 500;
 	margin-left: 1rem;
 	transition: color 0.3s ease;
@@ -43,10 +40,9 @@
   
   .navbar-light .navbar-nav .nav-link:hover,
   .navbar-light .navbar-nav .nav-link.active {
-	color: #007bff; /* Blue color on hover and active */
+	color: #007bff;
   }
   
-  /* Style for the toggle (hamburger) icon */
   .navbar-toggler {
 	border: none;
   }
@@ -56,13 +52,12 @@
   }
   
   .navbar-toggler .fas {
-	color: #333333; /* Icon color */
+	color: #333333;
   }
   
-  /* Style for the login/logout button */
   .main-nav .button {
-	background-color: #007bff; /* Blue background */
-	color: #ffffff; /* White text */
+	background-color: #007bff;
+	color: #ffffff;
 	border: none;
 	border-radius: 5px;
 	padding: 8px 20px;
@@ -73,10 +68,9 @@
   }
   
   .main-nav .button:hover {
-	background-color: #0056b3; /* Darker blue on hover */
+	background-color: #0056b3;
   }
   
-  /* Remove logo-specific styles */
   .App-logo {
 	display: none;
   }

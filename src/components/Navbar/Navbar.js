@@ -5,7 +5,6 @@ import { AuthContext } from '../Authentication/AuthContext';
 import './Navbar.css';
 
 function ActiveListItem(props) {
-  // active={false} prevents a link from staying active when on the main page
   return (
     <LinkContainer to={props.url}>
       <Nav.Link active={false}>{props.name}</Nav.Link>
@@ -31,13 +30,13 @@ const NavBar = () => {
           {isAuthenticated ? (
             <>
               <ActiveListItem url='/' name='Home' />
-              <ActiveListItem url='/search' name='Search' />
-              {role === 'admin' && (
+              {role === 'Admin' && (
                 <ActiveListItem url='/admin-dashboard' name='Admin Dashboard' />
               )}
-              {role === 'staff' && (
+              {role === 'Staff' && (
                 <ActiveListItem url='/staff-dashboard' name='Staff Dashboard' />
               )}
+              {/* User Dashboard accessible to all logged-in users */}
               <ActiveListItem url='/user-dashboard' name='User Dashboard' />
               <Nav.Link onClick={logout}>
                 <button className='button'>Logout</button>
