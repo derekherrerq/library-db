@@ -62,14 +62,14 @@ export default async function handler(req, res) {
     const connection = await mysql.createConnection(connectionConfig);
 
     if (req.method === 'GET') {
-      // Fetch data based on the specified table
-      let sql = `SELECT * FROM ${table}`;
+      // Fetch data based on the specified table, excluding soft-deleted records
+      let sql = `SELECT * FROM ${table} WHERE IsDeleted = 0`;
       const params = [];
 
       // Check if 'available=true' is specified and if the table has an 'Availability' column
       const tablesWithAvailability = ['ItemBook', 'ItemDevices', 'ItemMagazine', 'ItemMedia'];
       if (req.query.available === 'true' && tablesWithAvailability.includes(table)) {
-        sql += ` WHERE Availability = 'Available'`;
+        sql += ` AND Availability = 'Available'`;
       }
 
       const [results] = await connection.execute(sql);
@@ -79,11 +79,12 @@ export default async function handler(req, res) {
       // Create a new record
       const data = req.body;
 
-      // Exclude 'CreatedAt', 'CreatedBy', 'LastUpdated', 'UpdatedBy' from data
+      // Exclude audit fields from data
       delete data.CreatedAt;
       delete data.CreatedBy;
       delete data.LastUpdated;
       delete data.UpdatedBy;
+      delete data.IsDeleted;
 
       // Process date fields
       for (const field in data) {
@@ -97,7 +98,7 @@ export default async function handler(req, res) {
 
       const placeholders = fields.map(() => '?').join(', ');
 
-      const sql = `INSERT INTO ${table} (${fields.join(', ')}, CreatedAt, CreatedBy, LastUpdated, UpdatedBy) VALUES (${placeholders}, NOW(), 'admin', NOW(), 'admin')`;
+      const sql = `INSERT INTO ${table} (${fields.join(', ')}, CreatedAt, CreatedBy, LastUpdated, UpdatedBy, IsDeleted) VALUES (${placeholders}, NOW(), 'admin', NOW(), 'admin', 0)`;
 
       await connection.execute(sql, values);
       await connection.end();
@@ -113,14 +114,15 @@ export default async function handler(req, res) {
 
       const keyValue = data[primaryKey];
 
-      // Exclude 'CreatedAt', 'CreatedBy', 'LastUpdated', 'UpdatedBy' from being updated
+      // Exclude audit fields from being updated
       const fields = Object.keys(data).filter(
         (key) =>
           key !== primaryKey &&
           key !== 'CreatedAt' &&
           key !== 'CreatedBy' &&
           key !== 'LastUpdated' &&
-          key !== 'UpdatedBy'
+          key !== 'UpdatedBy' &&
+          key !== 'IsDeleted'
       );
 
       // Process date fields
@@ -136,13 +138,13 @@ export default async function handler(req, res) {
       values.push(keyValue);
 
       const setClause = fields.map((field) => `${field} = ?`).join(', ');
-      const sql = `UPDATE ${table} SET ${setClause}, LastUpdated = NOW(), UpdatedBy = ? WHERE ${primaryKey} = ?`;
+      const sql = `UPDATE ${table} SET ${setClause}, LastUpdated = NOW(), UpdatedBy = ? WHERE ${primaryKey} = ? AND IsDeleted = 0`;
 
       await connection.execute(sql, values);
       await connection.end();
       res.status(200).json({ message: 'Record updated successfully' });
     } else if (req.method === 'DELETE') {
-      // Delete a record
+      // Soft delete a record
       const data = req.body;
 
       if (!data[primaryKey]) {
@@ -152,11 +154,11 @@ export default async function handler(req, res) {
 
       const keyValue = data[primaryKey];
 
-      const sql = `DELETE FROM ${table} WHERE ${primaryKey} = ?`;
+      const sql = `UPDATE ${table} SET IsDeleted = 1, LastUpdated = NOW(), UpdatedBy = 'admin' WHERE ${primaryKey} = ?`;
 
       await connection.execute(sql, [keyValue]);
       await connection.end();
-      res.status(200).json({ message: 'Record deleted successfully' });
+      res.status(200).json({ message: 'Record soft-deleted successfully' });
     } else {
       res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
       res.status(405).end(`Method ${req.method} Not Allowed`);

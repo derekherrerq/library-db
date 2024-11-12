@@ -180,6 +180,7 @@ const AdminDashboard = () => {
         throw new Error('Failed to delete item');
       }
       await response.json();
+      alert('Item deleted successfully.');
       fetchItems(currentItemType);
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -248,6 +249,7 @@ const AdminDashboard = () => {
         throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'add'} item`);
       }
       await response.json();
+      alert(`Item ${isEditing ? 'updated' : 'added'} successfully.`);
       fetchItems(currentItemType);
       setFormData({});
       setIsEditing(false);
@@ -307,7 +309,9 @@ const AdminDashboard = () => {
                     })}
                     <td>
                       <button onClick={() => handleEdit(item)}>Edit</button>
-                      <button onClick={() => handleDelete(item[itemFields[currentItemType][0].key])}>
+                      <button
+                        onClick={() => handleDelete(item[itemFields[currentItemType][0].key])}
+                      >
                         Delete
                       </button>
                     </td>
@@ -321,7 +325,9 @@ const AdminDashboard = () => {
         )}
 
         {/* Form to add or edit items */}
-        <h2>{isEditing ? 'Edit' : 'Add New'} {currentItemType}</h2>
+        <h2>
+          {isEditing ? 'Edit' : 'Add New'} {currentItemType}
+        </h2>
         <form onSubmit={handleFormSubmit} className="dashboard-form">
           {itemFields[currentItemType].map((field) => (
             <div key={field.key} className="form-control">
