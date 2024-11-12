@@ -276,7 +276,7 @@ const UserDashboard = () => {
         {/* Display the user's balance */}
         <div className="balance-container">
           {balance !== null ? (
-            <p>Your Balance: ${balance.toFixed(2)}</p>
+            <p>Fines: ${balance.toFixed(2)}</p>
           ) : (
             <p>Loading balance...</p>
           )}
