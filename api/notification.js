@@ -5,9 +5,8 @@ const db = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT, // Add this line to include the port
+  port: process.env.DB_PORT,
 });
-
 
 export default async function handler(req, res) {
   try {
@@ -18,10 +17,18 @@ export default async function handler(req, res) {
       OR (DueDate < CURDATE() AND ReturnDate IS NULL)
     `);
 
-    const notifications = rows.map(row => ({
-      title: row.DueDate < new Date() ? 'Overdue Item' : 'Due Soon',
-      body: `Item ${row.BookISBN} is ${row.DueDate < new Date() ? 'overdue' : 'due soon'}!`,
-    }));
+    const notifications = rows.map(row => {
+      const dueDate = new Date(row.DueDate);
+      const now = new Date();
+
+      const isOverdue = dueDate < now;
+      const isDueSoon = !isOverdue && (dueDate <= new Date(now.setDate(now.getDate() + 2)));
+
+      return {
+        title: isOverdue ? 'Overdue Item' : 'Due Soon',
+        body: `Item ${row.BookISBN} is ${isOverdue ? 'overdue' : 'due soon'}!`,
+      };
+    });
 
     res.status(200).json({ notifications });
   } catch (error) {

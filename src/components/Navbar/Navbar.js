@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Nav, Navbar } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { AuthContext } from '../Authentication/AuthContext';
+import NotificationBell from './NotificationBell/NotificationBell'; // Import NotificationBell
 import './Navbar.css';
 
 function ActiveListItem(props) {
@@ -38,6 +39,7 @@ const NavBar = () => {
               )}
               {/* User Dashboard accessible to all logged-in users */}
               <ActiveListItem url='/user-dashboard' name='User Dashboard' />
+              <NotificationBell /> {/* Add NotificationBell here */}
               <Nav.Link onClick={logout}>
                 <button className='button'>Logout</button>
               </Nav.Link>
