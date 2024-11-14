@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   try {
     const [rows] = await db.query(`
       SELECT BookISBN, DueDate 
-      FROM borrowrecords 
+      FROM Borrowrecord 
       WHERE (DueDate BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY) 
       OR (DueDate < CURDATE() AND ReturnDate IS NULL)
     `);
