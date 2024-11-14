@@ -12,6 +12,7 @@ function NotificationBell() {
     const fetchNotifications = async () => {
       try {
         const response = await axios.get('/api/notifications');
+        console.log('Fetched notifications:', response.data.notifications); // Debugging log
         setNotifications(response.data.notifications);
       } catch (error) {
         console.error('Error fetching notifications:', error);
