@@ -1,26 +1,91 @@
-.main-text {
-	color: white;
-	position: absolute;
-	margin: auto;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	width: 100%;
+/* Base styling */
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+  
+body, html {
+	height: 100%;
+	font-family: Arial, sans-serif;
+}
+  
+/* Home Container */
+.home-container {
 	display: flex;
-	flex-direction: column;
-	align-items: center;
 	justify-content: center;
-	z-index: 999;
+	align-items: center;
+	min-height: 100vh;
+	/* Adjusted gradient with lower opacity */
+	background: linear-gradient(to bottom right, rgba(74, 145, 226, 0), rgba(20, 89, 160, 0.4)),
+		url('/src/Images/book-white-background.jpg') left center no-repeat;
+	background-size: auto 100%; /* Adjust the size as needed */
+	padding: 20px;
+}
+  
+/* Hero Section */
+.hero-section {
+	width: 90%;
+	max-width: 600px;
+	text-align: center;
+	color: #fff;
+	padding: 20px;
+	background-color: rgba(0, 0, 0, 0.5);
+	border-radius: 8px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+  
+.hero-content h1 {
+	text-align: center;
+	font-size: 2.5em;
+	margin-bottom: 10px;
+}
+  
+.hero-content p {
+	font-size: 1.2em;
+	margin-bottom: 20px;
+	color: #d1d1d1;
+}
+  
+.cta-button {
+	padding: 12px 24px;
+	font-size: 1em;
+	color: #fff;
+	background-color: #4CAF50;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+	transition: background-color 0.3s ease;
+}
+  
+.cta-button:hover {
+	background-color: #45a049;
+}
+  
+/* Responsive Design */
+@media (max-width: 768px) {
+	.hero-content h1 {
+	  font-size: 2em;
+	}
+	.hero-content p {
+	  font-size: 1em;
+	}
+	.cta-button {
+	  font-size: 0.9em;
+	  padding: 10px 20px;
+	}
+}
+  
+@media (max-width: 480px) {
+	.hero-content h1 {
+	  font-size: 1.8em;
+	}
+	.hero-content p {
+	  font-size: 0.9em;
+	}
+	.cta-button {
+	  font-size: 0.8em;
+	  padding: 8px 16px;
+	}
 }
 
-@keyframes fade-up {
-	0% {
-		opacity: 0;
-		transform: translateY(30px) scale(0.9);
-	}
-	100% {
-		opacity: 1;
-		transform: translateY(0px) scale(1);
-	}
-}

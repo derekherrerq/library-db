@@ -1,109 +1,103 @@
-* {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
+/* Navbar Styling */
+.main-nav {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background: linear-gradient(135deg, #3a8dde, #1b4e8a);
+	padding: 10px 20px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
   
-  .brand-text {
-	font-size: 1.5rem;
-	font-weight: bold;
-	color: #333333;
-  }
-  
-  :root {
-	--navbar-height: 60px;
-  }
-  
-  .main-nav {
-	height: var(--navbar-height);
-	padding: 0.5rem 1rem;
-	position: fixed;
-	top: 0;
-	width: 100%;
-	background-color: #ffffff;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	z-index: 1000;
+  /* Left, Center, and Right Sections */
+  .navbar-left,
+  .navbar-center,
+  .navbar-right {
 	display: flex;
 	align-items: center;
-  }  
+  }
   
-  .main-nav .navbar-collapse {
+  /* Center the brand title */
+  .navbar-left {
+	flex: 1; /* Equal space for the left section */
+	gap: 20px;
+  }
+  
+  .navbar-center {
+	flex: 1; /* Equal space for the center section */
+	justify-content: center;
+	
+  }
+
+  
+  
+  .navbar-right {
+	flex: 1; /* Equal space for the right section */
 	justify-content: flex-end;
   }
-  
-  .navbar-light .navbar-nav .nav-link {
-	color: #333333;
-	font-weight: 500;
-	margin-left: 1rem;
-	transition: color 0.3s ease;
+  @media (max-width: 768px) {
+	.navbar-left {
+	  gap: 15px; /* Decrease gap on smaller screens */
+	}
   }
+
   
-  .navbar-light .navbar-nav .nav-link:hover,
-  .navbar-light .navbar-nav .nav-link.active {
-	color: #007bff;
-  }
-  
-  .navbar-toggler {
-	border: none;
-  }
-  
-  .navbar-toggler:focus {
-	outline: none;
-  }
-  
-  .navbar-toggler .fas {
-	color: #333333;
-  }
-  
-  .main-nav .button {
-	background-color: #007bff;
-	color: #ffffff;
-	border: none;
-	border-radius: 5px;
-	padding: 8px 20px;
-	font-size: 16px;
-	font-weight: 600;
+  /* Brand Styling */
+  .brand-text {
+	color: #fff;
+	font-size: 1.5em;
+	font-weight: bold;
+	display: flex;
+	align-items: center;
 	cursor: pointer;
-	transition: background-color 0.3s ease;
   }
   
-  .main-nav .button:hover {
-	background-color: #0056b3;
+  .brand-icon {
+	margin-right: 8px;
   }
   
-  .App-logo {
-	display: none;
+ /* Link Styling */
+.nav-link-custom {
+  color: #f0f0f0 !important;
+  font-size: 1em;
+  text-decoration: none;
+  transition: color 0.3s;
+  letter-spacing: 0.5px; /* Adjust spacing between letters */
+  padding: 0 10px; /* Add padding on the left and right of each link */
+}
+
+.nav-link-custom:last-child {
+  margin-right: 0; /* Remove margin for the last item */
+}
+
+.nav-link-custom:hover {
+  color: #ffe57f !important;
+  text-decoration: none;
+}
+  
+  /* Logout Button Styling */
+  .logout-button {
+	color: #ff5252 !important;
+	font-weight: bold;
+	padding: 10px;
+	cursor: pointer;
   }
   
-  /* Responsive adjustments */
-  @media (max-width: 992px) {
+  .logout-button:hover {
+	color: #ff0000 !important;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+	.navbar-left,
+	.navbar-right {
+	  flex: 1;
+	}
+	.nav-link-custom {
+	  margin-right: 0;
+	  padding: 10px 0;
+	}
 	.brand-text {
-	  font-size: 1.3rem; /* Slightly smaller on tablets */
-	}
-  
-	.navbar-light .navbar-nav .nav-link {
-	  margin-left: 0.5rem;
-	  font-size: 14px;
-	}
-  
-	.main-nav .button {
-	  padding: 6px 16px;
-	  font-size: 14px;
+	  font-size: 1.3em;
 	}
   }
   
-  @media (max-width: 576px) {
-	.brand-text {
-	  font-size: 1.2rem; /* Smaller on mobile devices */
-	}
-  
-	.navbar-light .navbar-nav .nav-link {
-	  margin-left: 0.3rem;
-	  font-size: 12px;
-	}
-  
-	.main-nav .button {
-	  padding: 5px 12px;
-	  font-size: 12px;
-	}
-  }  
