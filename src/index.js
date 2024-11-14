@@ -4,6 +4,7 @@ import App from './App';
 import { AuthProvider } from './components/Authentication/AuthContext';
 import './index.css';
 
+
 const rootElement = document.getElementById('root');
 
 const app = (
