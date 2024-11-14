@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Nav, Navbar } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { AuthContext } from '../Authentication/AuthContext';
-import NotificationBell from '../NotificationBell';
+import NotificationBell from './NotificationBell/NotificationBell';
 import './Navbar.css';
 
 function ActiveListItem(props) {
