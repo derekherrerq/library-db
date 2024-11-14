@@ -8,6 +8,7 @@ import PrivateRoute from './components/Authentication/PrivateRoute';
 const NavBar = lazy(() => import('./components/Navbar/Navbar'));
 const Home = lazy(() => import('./pages/Home/Home'));
 const Login = lazy(() => import('./pages/Login/Login'));
+const Register = lazy(() => import('./pages/Register/Register'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 const UserDashboard = lazy(() => import('./pages/UserDashboard/UserDashboard'));
 const StaffDashboard = lazy(() => import('./pages/StaffDashboard/StaffDashboard'));
@@ -21,48 +22,49 @@ const App = () => {
         <Suspense fallback={<div>Loading...</div>}>
           <NavBar />
           <div className="main-content">
-          <Routes>
-            {/* Protected Home Route */}
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <Home />
-                </PrivateRoute>
-              }
-            />
+            <Routes>
+              {/* Protected Home Route */}
+              <Route
+                path="/"
+                element={
+                  <PrivateRoute>
+                    <Home />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Protected Dashboard Routes */}
-            <Route
-              path="/user-dashboard"
-              element={
-                <PrivateRoute requiredRole="user">
-                  <UserDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/staff-dashboard"
-              element={
-                <PrivateRoute requiredRole="staff">
-                  <StaffDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin-dashboard"
-              element={
-                <PrivateRoute requiredRole="admin">
-                  <AdminDashboard />
-                </PrivateRoute>
-              }
-            />
+              {/* Protected Dashboard Routes */}
+              <Route
+                path="/user-dashboard"
+                element={
+                  <PrivateRoute requiredRole="user">
+                    <UserDashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/staff-dashboard"
+                element={
+                  <PrivateRoute requiredRole="staff">
+                    <StaffDashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin-dashboard"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <AdminDashboard />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/404" element={<NotFound />} />
-            <Route path="*" element={<FourOFour />} />
-          </Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/404" element={<NotFound />} />
+              <Route path="*" element={<FourOFour />} />
+            </Routes>
           </div>
         </Suspense>
       </Router>
