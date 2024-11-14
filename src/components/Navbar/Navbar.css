@@ -7,6 +7,11 @@
 	padding: 10px 20px;
 	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
+
+  /* Hide left side of navbar when hideLeft is true */
+.hide-left {
+	display: none;
+  }
   
   /* Left, Center, and Right Sections */
   .navbar-left,
@@ -23,13 +28,11 @@
   }
   
   .navbar-center {
-	flex: 1; /* Equal space for the center section */
+	/*flex: 50;  Equal space for the center section */
 	justify-content: center;
 	
   }
 
-  
-  
   .navbar-right {
 	flex: 1; /* Equal space for the right section */
 	justify-content: flex-end;

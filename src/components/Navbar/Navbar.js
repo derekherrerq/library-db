@@ -18,19 +18,14 @@ const NavBar = () => {
   const { isAuthenticated, role, logout } = useContext(AuthContext);
 
   return (
-    <Navbar className="main-nav" fluid collapseOnSelect expand="lg">
+    <Navbar className="main-nav" expand="md">
       <div className="navbar-left">
-        <Navbar.Toggle aria-controls="responsive-navbar-nav">
-          <i className="fas fa-bars toggle-icon"></i>
-        </Navbar.Toggle>
-        <Navbar.Collapse id="responsive-navbar-nav">
-          <Nav className="left-nav">
-            <ActiveListItem url="/" name="Home" />
-            {role === 'Admin' && <ActiveListItem url="/admin-dashboard" name="Admin Dashboard" />}
-            {role === 'Staff' && <ActiveListItem url="/staff-dashboard" name="Staff Dashboard" />}
-            <ActiveListItem url="/user-dashboard" name="User Dashboard" />
-          </Nav>
-        </Navbar.Collapse>
+        <Nav className="left-nav">
+          <ActiveListItem url="/" name="Home" />
+          {role === 'Admin' && <ActiveListItem url="/admin-dashboard" name="Admin Dashboard" />}
+          {role === 'Staff' && <ActiveListItem url="/staff-dashboard" name="Staff Dashboard" />}
+          <ActiveListItem url="/user-dashboard" name="User Dashboard" />
+        </Nav>
       </div>
       
       <div className="navbar-center">
