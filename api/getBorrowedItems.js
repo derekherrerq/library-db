@@ -38,7 +38,7 @@ export default async function handler(req, res) {
           br.FineAmount,
           br.Status
         FROM BorrowRecord br
-        WHERE br.UserID = ?
+        WHERE br.UserID = ? AND br.IsDeleted = 0
         `,
         [userID]
       );
