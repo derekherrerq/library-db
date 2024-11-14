@@ -1,3 +1,4 @@
+// src/index.js
 import React from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import App from './App';
@@ -19,3 +20,5 @@ if (rootElement.hasChildNodes()) {
 } else {
   createRoot(rootElement).render(app);
 }
+
+// test

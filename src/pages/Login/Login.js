@@ -1,3 +1,4 @@
+// src/pages/Login.js
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../components/Authentication/AuthContext';
@@ -7,15 +8,18 @@ function Login() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // State variables for form inputs and error message
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await fetch('/api/login', {
+      // Send login request to the backend
+      const response = await fetch('/api/login', { // Updated fetch URL
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -24,8 +28,10 @@ function Login() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        login(data.token, data.role, data.userID);
+        // Update authentication state with role
+        login(data.token, data.role);
 
+        // Redirect based on role
         if (data.role === 'admin') {
           navigate('/admin-dashboard');
         } else if (data.role === 'staff') {
@@ -37,13 +43,9 @@ function Login() {
         setErrorMessage(data.message || 'Login failed');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', error); // For debugging
       setErrorMessage('An error occurred during login.');
     }
-  };
-
-  const handleRegistrationClick = () => {
-    navigate('/register');
   };
 
   return (
@@ -70,9 +72,6 @@ function Login() {
           />
         </div>
         <button type="submit">Login</button>
-        <p className="registration-text" onClick={handleRegistrationClick}>
-          Don’t have an account? <span>Register here</span>
-        </p>
       </form>
     </div>
   );
