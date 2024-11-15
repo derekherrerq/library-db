@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// AdminDashboard.js
+import React, { useState, useEffect, useCallback } from 'react';
 import './AdminDashboard.css';
 
 const itemFields = {
@@ -110,17 +111,39 @@ const itemFields = {
 };
 
 const AdminDashboard = () => {
-  const [itemsData, setItemsData] = useState([]);
+  const [itemsData, setItemsData] = useState({});
   const [currentItemType, setCurrentItemType] = useState('ItemBook');
-
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState({
+    Book: true,
+    Device: true,
+    Magazine: true,
+    Media: true,
+  });
 
-  const fetchItems = async (table) => {
+  // Memoize fetchItems to prevent unnecessary re-creations
+  const fetchItems = useCallback(async (table) => {
     try {
       let response;
       if (table === 'UserFinesReport') {
         response = await fetch(`/api/userFinesReport`);
+      } else if (table === 'AnnualCostReport') {
+        // Check if at least one category is selected
+        const categoriesSelected = Object.values(selectedCategories).some((val) => val);
+        if (!reportStartDate || !reportEndDate || !categoriesSelected) {
+          setItemsData({});
+          return;
+        }
+
+        const categories = Object.keys(selectedCategories)
+          .filter((cat) => selectedCategories[cat])
+          .join(',');
+        const url = `/api/annualCostReport?startDate=${reportStartDate}&endDate=${reportEndDate}&categories=${categories}`;
+        console.log('Fetching AnnualCostReport with URL:', url);
+        response = await fetch(url);
       } else {
         response = await fetch(`/api/pullAPI?table=${table}`);
       }
@@ -135,14 +158,18 @@ const AdminDashboard = () => {
       console.error('Error:', error);
       alert(error.message);
     }
-  };
+  }, [reportStartDate, reportEndDate, selectedCategories]);
 
   useEffect(() => {
     fetchItems(currentItemType);
-  }, [currentItemType]);
+  }, [fetchItems, currentItemType]);
 
   const handleItemTypeChange = (itemType) => {
     setCurrentItemType(itemType);
+    if (itemType !== 'AnnualCostReport') {
+      setFormData({});
+      setIsEditing(false);
+    }
     fetchItems(itemType);
     setFormData({});
     setIsEditing(false);
@@ -219,7 +246,9 @@ const AdminDashboard = () => {
         (!MagID || MagID.trim() === '') &&
         (!MediaID || MediaID.trim() === '')
       ) {
-        alert('At least one of Book ISBN, Device ID, Magazine ID, or Media ID must be provided.');
+        alert(
+          'At least one of Book ISBN, Device ID, Magazine ID, or Media ID must be provided.'
+        );
         return false;
       }
     }
@@ -268,7 +297,9 @@ const AdminDashboard = () => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'add'} item`);
+        throw new Error(
+          errorData.message || `Failed to ${isEditing ? 'update' : 'add'} item`
+        );
       }
       await response.json();
       alert(`Item ${isEditing ? 'updated' : 'added'} successfully.`);
@@ -281,23 +312,204 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleCategoryChange = (e) => {
+    const { name, checked } = e.target;
+    setSelectedCategories({ ...selectedCategories, [name]: checked });
+  };
+
+  // Calculate total spending across all selected categories
+  const calculateTotalSpending = () => {
+    if (!itemsData.totalCosts) return 0;
+    return itemsData.totalCosts.reduce((acc, curr) => acc + curr.totalCost, 0);
+  };
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-content">
         <h1>Admin Dashboard</h1>
         {/* Buttons to select the item type */}
         <div className="button-group">
-          <button onClick={() => handleItemTypeChange('BorrowRecord')}>Borrow Records</button>
+          <button onClick={() => handleItemTypeChange('BorrowRecord')}>
+            Borrow Records
+          </button>
           <button onClick={() => handleItemTypeChange('ItemBook')}>Books</button>
           <button onClick={() => handleItemTypeChange('ItemDevices')}>Devices</button>
           <button onClick={() => handleItemTypeChange('ItemMagazine')}>Magazines</button>
           <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
           <button onClick={() => handleItemTypeChange('Users')}>Users</button>
           <button onClick={() => handleItemTypeChange('Employee')}>Employee</button>
-          <button onClick={() => handleItemTypeChange('UserFinesReport')}>User Fines Report</button>
+          <button onClick={() => handleItemTypeChange('UserFinesReport')}>
+            User Fines Report
+          </button>
+          <button onClick={() => handleItemTypeChange('AnnualCostReport')}>
+            Total Spending Report
+          </button>
         </div>
 
-        {itemsData.length > 0 ? (
+        {/* Total Spending Report UI */}
+        {currentItemType === 'AnnualCostReport' && (
+          <>
+            <h2>Total Spending Report</h2>
+            <div className="report-filters">
+              <label>
+                Start Date:
+                <input
+                  type="date"
+                  value={reportStartDate}
+                  onChange={(e) => setReportStartDate(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                End Date:
+                <input
+                  type="date"
+                  value={reportEndDate}
+                  onChange={(e) => setReportEndDate(e.target.value)}
+                  required
+                />
+              </label>
+              <div className="category-filters">
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Book"
+                    checked={selectedCategories.Book}
+                    onChange={handleCategoryChange}
+                  />
+                  Books
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Device"
+                    checked={selectedCategories.Device}
+                    onChange={handleCategoryChange}
+                  />
+                  Devices
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Magazine"
+                    checked={selectedCategories.Magazine}
+                    onChange={handleCategoryChange}
+                  />
+                  Magazines
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Media"
+                    checked={selectedCategories.Media}
+                    onChange={handleCategoryChange}
+                  />
+                  Media
+                </label>
+              </div>
+              {/* Removed the Generate Report button */}
+            </div>
+
+            {/* Display total spending across selected categories */}
+            {itemsData.totalCosts && Object.values(selectedCategories).some((val) => val) && (
+              <div className="report-summary">
+                <p>
+                  Total Spending: ${calculateTotalSpending().toFixed(2)}
+                </p>
+              </div>
+            )}
+
+            {/* Display total spending per category */}
+            {itemsData.totalCosts && (
+              <div className="report-summary">
+                {selectedCategories.Book ? (
+                  <p>
+                    Books Total: $
+                    {itemsData.totalCosts
+                      .find((c) => c.category === 'Book')
+                      ?.totalCost.toFixed(2) || '0.00'}
+                  </p>
+                ) : (
+                  <p>Books Total: N/A</p>
+                )}
+
+                {selectedCategories.Device ? (
+                  <p>
+                    Devices Total: $
+                    {itemsData.totalCosts
+                      .find((c) => c.category === 'Device')
+                      ?.totalCost.toFixed(2) || '0.00'}
+                  </p>
+                ) : (
+                  <p>Devices Total: N/A</p>
+                )}
+
+                {selectedCategories.Magazine ? (
+                  <p>
+                    Magazines Total: $
+                    {itemsData.totalCosts
+                      .find((c) => c.category === 'Magazine')
+                      ?.totalCost.toFixed(2) || '0.00'}
+                  </p>
+                ) : (
+                  <p>Magazines Total: N/A</p>
+                )}
+
+                {selectedCategories.Media ? (
+                  <p>
+                    Media Total: $
+                    {itemsData.totalCosts
+                      .find((c) => c.category === 'Media')
+                      ?.totalCost.toFixed(2) || '0.00'}
+                  </p>
+                ) : (
+                  <p>Media Total: N/A</p>
+                )}
+              </div>
+            )}
+
+            {/* Display items if any categories are selected */}
+            {selectedCategories.Book ||
+            selectedCategories.Device ||
+            selectedCategories.Magazine ||
+            selectedCategories.Media ? (
+              itemsData.items && itemsData.items.length > 0 ? (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Item Type</th>
+                        <th>Item ID</th>
+                        <th>Title</th>
+                        <th>Cost</th>
+                        <th>Purchased Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itemsData.items.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.ItemType}</td>
+                          <td>{item.ItemID}</td>
+                          <td>{item.Title}</td>
+                          <td>${parseFloat(item.Cost).toFixed(2)}</td>
+                          <td>{new Date(item.CreatedAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p>No records found for the selected time frame.</p>
+              )
+            ) : (
+              // If no categories are selected, display an optional message
+              <p>No categories selected. Please select at least one category to view the report.</p>
+            )}
+          </>
+        )}
+
+        {/* Existing report UIs */}
+        {currentItemType !== 'AnnualCostReport' && itemsData.length > 0 ? (
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -347,12 +559,12 @@ const AdminDashboard = () => {
               </tbody>
             </table>
           </div>
-        ) : (
+        ) : currentItemType !== 'AnnualCostReport' && (
           <p>No records found.</p>
         )}
 
         {/* Form to add or edit items */}
-        {currentItemType !== 'UserFinesReport' && (
+        {currentItemType !== 'UserFinesReport' && currentItemType !== 'AnnualCostReport' && (
           <>
             <h2>
               {isEditing ? 'Edit' : 'Add New'} {currentItemType}
@@ -412,3 +624,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

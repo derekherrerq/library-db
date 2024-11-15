@@ -1,179 +1,279 @@
+/* AdminDashboard.css */
+
 .dashboard-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f2f5;
+  padding: 20px;
+}
+
+.dashboard-content {
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 1200px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Heading Styles */
+h1,
+h2 {
+  margin-bottom: 20px;
+  color: #333333;
+  text-align: center;
+}
+
+/* Button Group Styles */
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.button-group button {
+  margin: 5px;
+  padding: 10px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.button-group button:hover {
+  background-color: #0056b3;
+}
+
+/* Table Styles */
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 40px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #cccccc;
+  padding: 12px;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #e9ecef; /* Slightly different background for report tables */
+  font-weight: bold;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #fdfdfe;
+}
+
+.data-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+.data-table td button {
+  margin-right: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.data-table td button:hover {
+  background-color: #0056b3;
+}
+
+/* Form Styles */
+.dashboard-form {
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  max-width: 500px;
+  animation: fade-up 0.5s ease-out;
+}
+
+.form-control {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.form-control label {
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #333333;
+}
+
+.form-control input {
+  padding: 10px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.form-control input:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Form Buttons */
+.form-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.form-buttons button {
+  margin: 5px;
+  padding: 12px 20px;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.form-buttons button:hover {
+  background-color: #0056b3;
+}
+
+/* Animation */
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .dashboard-content {
     padding: 20px;
   }
-  
-  .dashboard-content {
-    background-color: #ffffff;
-    padding: 40px;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 1200px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  .form-control {
+    margin-bottom: 15px;
   }
-  
-  /* Heading Styles */
-  h1, h2 {
-    margin-bottom: 20px;
-    color: #333333;
+
+  .form-buttons button {
+    width: 100%;
+    margin: 5px 0;
+  }
+
+  .report-filters {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .report-filters label,
+  .report-filters input,
+  .report-filters button {
+    margin: 5px 0;
+  }
+
+  .report-summary {
+    font-size: 16px;
+  }
+
+  .report-summary p {
+    width: 80%;
     text-align: center;
   }
-  
-  /* Button Group Styles */
-  .button-group {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 30px;
-  }
-  
-  .button-group button {
-    margin: 5px;
-    padding: 10px 15px;
-    font-size: 14px;
-    cursor: pointer;
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-  }
-  
-  .button-group button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* Table Styles */
-  .table-container {
-    overflow-x: auto;
-    margin-bottom: 40px;
-  }
-  
-  .data-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .data-table th,
-  .data-table td {
-    border: 1px solid #cccccc;
-    padding: 12px;
-    text-align: left;
-  }
-  
-  .data-table th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-  }
-  
-  .data-table tr:nth-child(even) {
-    background-color: #fdfdfe;
-  }
-  
-  .data-table tr:hover {
-    background-color: #f1f1f1;
-  }
-  
-  .data-table td button {
-    margin-right: 5px;
-    padding: 6px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-  }
-  
-  .data-table td button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* Form Styles */
-  .dashboard-form {
-    display: flex;
+}
+
+/* Report Filters Enhancements */
+.report-filters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.report-filters label {
+  margin: 5px 10px;
+  font-weight: bold;
+  color: #333333;
+}
+
+.category-filters {
+  display: flex;
+  gap: 15px;
+  margin: 10px 0;
+}
+
+.category-filters label {
+  font-weight: normal;
+  color: #555555;
+}
+
+/* Report Summary Enhancements */
+.report-summary {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.report-summary p {
+  margin: 10px;
+  padding: 15px 20px;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333333;
+}
+
+/* Adjustments for Total Spending Report Table */
+.data-table th {
+  background-color: #e9ecef; /* Slightly different background for report tables */
+}
+
+.report-summary p {
+  margin: 0;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+/* Responsive Adjustments for Report Filters and Summary */
+@media (max-width: 768px) {
+  .report-filters {
     flex-direction: column;
-    margin: 0 auto;
-    max-width: 500px;
-    animation: fade-up 0.5s ease-out;
+    align-items: flex-start;
   }
-  
-  .form-control {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 20px;
+
+  .report-filters label,
+  .report-filters input,
+  .report-filters button {
+    margin: 5px 0;
   }
-  
-  .form-control label {
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #333333;
-  }
-  
-  .form-control input {
-    padding: 10px;
-    border: 1px solid #cccccc;
-    border-radius: 4px;
+
+  .report-summary {
     font-size: 16px;
   }
-  
-  .form-control input:focus {
-    border-color: #007bff;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-  }
-  
-  /* Form Buttons */
-  .form-buttons {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-  }
-  
-  .form-buttons button {
-    margin: 5px;
-    padding: 12px 20px;
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .form-buttons button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* Animation */
-  @keyframes fade-up {
-    0% {
-      opacity: 0;
-      transform: translateY(30px) scale(0.95);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0px) scale(1);
-    }
-  }
-  
-  /* Responsive Styles */
-  @media (max-width: 768px) {
-    .dashboard-content {
-      padding: 20px;
-    }
-  
-    .form-control {
-      margin-bottom: 15px;
-    }
-  
-    .form-buttons button {
-      width: 100%;
-      margin: 5px 0;
-    }
-  }  
+}
+
