@@ -19,7 +19,8 @@
 
 /* Heading Styles */
 h1,
-h2 {
+h2,
+h3 {
   margin-bottom: 20px;
   color: #333333;
   text-align: center;
@@ -199,6 +200,17 @@ h2 {
     width: 80%;
     text-align: center;
   }
+
+  .popular-category-filters {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .popular-category-filters label {
+    margin: 5px 0;
+  }
 }
 
 /* Report Filters Enhancements */
@@ -222,6 +234,18 @@ h2 {
 }
 
 .category-filters label {
+  font-weight: normal;
+  color: #555555;
+}
+
+/* Popular Items Report Specific Styles */
+.popular-category-filters {
+  display: flex;
+  gap: 15px;
+  margin: 10px 0;
+}
+
+.popular-category-filters label {
   font-weight: normal;
   color: #555555;
 }
@@ -276,4 +300,5 @@ h2 {
     font-size: 16px;
   }
 }
+
 
