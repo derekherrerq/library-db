@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Nav, Navbar } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { AuthContext } from '../Authentication/AuthContext';
-import NotificationBell from './NotificationBell/NotificationBell'; // Import NotificationBell
+import NotificationBell from './NotificationBell/NotificationBell';
 import './Navbar.css';
 
 function ActiveListItem({ url, name }) {
@@ -19,47 +19,40 @@ const NavBar = () => {
   const { isAuthenticated, role, logout } = useContext(AuthContext);
 
   return (
-    <Navbar className='main-nav' fluid collapseOnSelect expand='lg'>
-      <LinkContainer to='/'>
-        <Navbar.Brand className='brand-text'>
-          Library DB
-        </Navbar.Brand>
-      </LinkContainer>
-      <Navbar.Toggle aria-controls='responsive-navbar-nav'>
-        <i className='fas fa-bars fa-lg'></i>
-      </Navbar.Toggle>
-      <Navbar.Collapse id='responsive-navbar-nav'>
-        <Nav className='ml-auto'>
-          {isAuthenticated ? (
+    <Navbar className="main-nav" expand="md">
+      <div className="navbar-left">
+        {isAuthenticated && (
+          <Nav className="left-nav">
+            <ActiveListItem url="/" name="Home" />
+            <ActiveListItem url="/user-dashboard" name="User Dashboard" />
+            {role === 'Admin' && <ActiveListItem url="/admin-dashboard" name="Admin Dashboard" />}
+            {role === 'Staff' && <ActiveListItem url="/staff-dashboard" name="Staff Dashboard" />}
+          </Nav>
+        )}
+      </div>
+
+      <div className="navbar-center">
+        <LinkContainer to="/">
+          <Navbar.Brand className="brand-text">
+            <i className="fas fa-book-open brand-icon"></i> Library DB
+          </Navbar.Brand>
+        </LinkContainer>
+      </div>
+
+      <div className="navbar-right">
+        <Nav className="ml-auto">
+          {isAuthenticated && (
             <>
-              <ActiveListItem url='/' name='Home' />
-              {role === 'Admin' && (
-                <ActiveListItem url='/admin-dashboard' name='Admin Dashboard' />
-              )}
-              {role === 'Staff' && (
-                <ActiveListItem url='/staff-dashboard' name='Staff Dashboard' />
-              )}
-              {/* User Dashboard accessible to all logged-in users */}
-              <ActiveListItem url='/user-dashboard' name='User Dashboard' />
-              <NotificationBell /> {/* Add NotificationBell here */}
-              <Nav.Link onClick={logout}>
-                <button className='button'>Logout</button>
+              <NotificationBell />
+              <Nav.Link onClick={logout} className="nav-link-custom logout-button">
+                Logout
               </Nav.Link>
-            </>
-          ) : (
-            <>
-              <LinkContainer to='/login'>
-                <Nav.Link>
-                  <button className='button'>Login</button>
-                </Nav.Link>
-              </LinkContainer>
             </>
           )}
         </Nav>
-      </Navbar.Collapse>
+      </div>
     </Navbar>
   );
 };
 
 export default NavBar;
-
