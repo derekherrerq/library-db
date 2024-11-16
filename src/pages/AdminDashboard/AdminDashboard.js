@@ -1,4 +1,3 @@
-// src/components/AdminDashboard.js
 import React, { useState, useEffect, useCallback } from 'react';
 import './AdminDashboard.css';
 
@@ -111,6 +110,7 @@ const itemFields = {
 };
 
 const AdminDashboard = () => {
+  // State variables
   const [itemsData, setItemsData] = useState([]);
   const [currentItemType, setCurrentItemType] = useState('ItemBook');
   const [formData, setFormData] = useState({});
@@ -137,6 +137,12 @@ const AdminDashboard = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [userIdFilter, setUserIdFilter] = useState('');
+  const [borrowDateFrom, setBorrowDateFrom] = useState('');
+  const [borrowDateTo, setBorrowDateTo] = useState('');
+  const [filteredUserInfo, setFilteredUserInfo] = useState(null);
+  const [usersList, setUsersList] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Fetch Functions
   const fetchItems = useCallback(
@@ -144,8 +150,21 @@ const AdminDashboard = () => {
       console.log(`Fetching data for table: ${table}`);
       try {
         let response;
+        let url = '';
+
         if (table === 'UserFinesReport') {
-          response = await fetch(`/api/userFinesReport`);
+          // Append query parameters if filters are applied
+          const params = new URLSearchParams();
+          if (userIdFilter.trim() !== '') {
+            params.append('UserID', userIdFilter.trim());
+          }
+          if (borrowDateFrom !== '') {
+            params.append('BorrowDateFrom', borrowDateFrom);
+          }
+          if (borrowDateTo !== '') {
+            params.append('BorrowDateTo', borrowDateTo);
+          }
+          url = `/api/userFinesReport?${params.toString()}`;
         } else if (table === 'AnnualCostReport') {
           // Check if at least one category is selected
           const categoriesSelected = Object.values(selectedCategories).some((val) => val);
@@ -158,12 +177,14 @@ const AdminDashboard = () => {
           const categories = Object.keys(selectedCategories)
             .filter((cat) => selectedCategories[cat])
             .join(',');
-          const url = `/api/annualCostReport?startDate=${reportStartDate}&endDate=${reportEndDate}&categories=${categories}`;
+          url = `/api/annualCostReport?startDate=${reportStartDate}&endDate=${reportEndDate}&categories=${categories}`;
           console.log(`Fetching AnnualCostReport with URL: ${url}`);
-          response = await fetch(url);
         } else {
-          response = await fetch(`/api/pullAPI?table=${table}`);
+          url = `/api/pullAPI?table=${table}`;
         }
+
+        console.log(`Fetching data from URL: ${url}`);
+        response = await fetch(url);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -173,12 +194,30 @@ const AdminDashboard = () => {
         const data = await response.json();
         console.log(`Fetched data for ${table}:`, data);
         setItemsData(data);
+
+        // If UserFinesReport and data exists, set filtered user info
+        if (table === 'UserFinesReport' && data.length > 0) {
+          const user = data[0]; // Assuming all records are for the same user when filtered
+          setFilteredUserInfo({
+            fullName: `${user.FirstName} ${user.LastName}`,
+            balance: user.UserBalance,
+          });
+        } else if (table === 'UserFinesReport') {
+          setFilteredUserInfo(null);
+        }
       } catch (error) {
         console.error(`Error in fetchItems for ${table}:`, error);
         alert(error.message);
       }
     },
-    [reportStartDate, reportEndDate, selectedCategories]
+    [
+      reportStartDate,
+      reportEndDate,
+      selectedCategories,
+      userIdFilter,
+      borrowDateFrom,
+      borrowDateTo,
+    ]
   );
 
   const fetchPopularItemsReport = useCallback(async () => {
@@ -196,6 +235,7 @@ const AdminDashboard = () => {
       const response = await fetch(
         `/api/popularItemsReport?startDate=${reportStartDate}&endDate=${reportEndDate}`
       );
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error fetching PopularItemsReport:', errorData);
@@ -213,6 +253,24 @@ const AdminDashboard = () => {
     }
   }, [reportStartDate, reportEndDate]);
 
+  // Function to fetch users for the dropdown
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await fetch('/api/userFinesReport?action=getUsers');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const users = await response.json();
+      setUsersList(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      alert(error.message);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   // Effect to fetch data when currentItemType changes
   useEffect(() => {
     if (currentItemType !== 'PopularItemsReport') {
@@ -228,6 +286,12 @@ const AdminDashboard = () => {
     setIsEditing(false);
     setErrorMessage('');
 
+    // Reset filters
+    setUserIdFilter('');
+    setBorrowDateFrom('');
+    setBorrowDateTo('');
+    setFilteredUserInfo(null);
+
     if (itemType === 'PopularItemsReport') {
       // Clear previous popular items data
       setPopularItemsData({
@@ -236,6 +300,11 @@ const AdminDashboard = () => {
         popularMagazines: [],
         popularMedia: [],
       });
+    }
+
+    // If UserFinesReport is selected, fetch the list of users
+    if (itemType === 'UserFinesReport') {
+      fetchUsers();
     }
   };
 
@@ -250,6 +319,30 @@ const AdminDashboard = () => {
 
     setFormData({ ...formData, [name]: newValue });
     console.log(`Form data updated: ${name} = ${newValue}`);
+  };
+
+  // Handlers for filter inputs
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'userIdFilter') {
+      setUserIdFilter(value);
+    } else if (name === 'borrowDateFrom') {
+      setBorrowDateFrom(value);
+    } else if (name === 'borrowDateTo') {
+      setBorrowDateTo(value);
+    }
+  };
+
+  const applyFilters = () => {
+    fetchItems('UserFinesReport');
+  };
+
+  const clearFilters = () => {
+    setUserIdFilter('');
+    setBorrowDateFrom('');
+    setBorrowDateTo('');
+    setFilteredUserInfo(null);
+    fetchItems('UserFinesReport');
   };
 
   const handleAddNew = () => {
@@ -366,7 +459,10 @@ const AdminDashboard = () => {
         }
       });
 
-      console.log(`Sending ${method} request to /api/pullAPI?table=${currentItemType} with data:`, dataToSend);
+      console.log(
+        `Sending ${method} request to /api/pullAPI?table=${currentItemType} with data:`,
+        dataToSend
+      );
 
       const response = await fetch(`/api/pullAPI?table=${currentItemType}`, {
         method: method,
@@ -416,22 +512,34 @@ const AdminDashboard = () => {
         <h1>Admin Dashboard</h1>
         {/* Buttons to select the item type */}
         <div className="button-group">
-          <button onClick={() => handleItemTypeChange('BorrowRecord')}>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('BorrowRecord')}>
             Borrow Records
           </button>
-          <button onClick={() => handleItemTypeChange('ItemBook')}>Books</button>
-          <button onClick={() => handleItemTypeChange('ItemDevices')}>Devices</button>
-          <button onClick={() => handleItemTypeChange('ItemMagazine')}>Magazines</button>
-          <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
-          <button onClick={() => handleItemTypeChange('Users')}>Users</button>
-          <button onClick={() => handleItemTypeChange('Employee')}>Employee</button>
-          <button onClick={() => handleItemTypeChange('UserFinesReport')}>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('ItemBook')}>
+            Books
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('ItemDevices')}>
+            Devices
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('ItemMagazine')}>
+            Magazines
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('ItemMedia')}>
+            Media
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('Users')}>
+            Users
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('Employee')}>
+            Employee
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('UserFinesReport')}>
             User Fines Report
           </button>
-          <button onClick={() => handleItemTypeChange('AnnualCostReport')}>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('AnnualCostReport')}>
             Total Spending Report
           </button>
-          <button onClick={() => handleItemTypeChange('PopularItemsReport')}>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('PopularItemsReport')}>
             Popular Items Report
           </button>
         </div>
@@ -503,9 +611,7 @@ const AdminDashboard = () => {
             {/* Display total spending across selected categories */}
             {itemsData.totalCosts && Object.values(selectedCategories).some((val) => val) && (
               <div className="report-summary">
-                <p>
-                  Total Spending: ${calculateTotalSpending().toFixed(2)}
-                </p>
+                <p>Total Spending: ${calculateTotalSpending().toFixed(2)}</p>
               </div>
             )}
 
@@ -592,8 +698,9 @@ const AdminDashboard = () => {
                 <p>No records found for the selected time frame.</p>
               )
             ) : (
-              // If no categories are selected, display an optional message
-              <p>No categories selected. Please select at least one category to view the report.</p>
+              <p>
+                No categories selected. Please select at least one category to view the report.
+              </p>
             )}
           </>
         )}
@@ -669,117 +776,192 @@ const AdminDashboard = () => {
             ) : (
               <>
                 {/* Popular Books Table */}
-                {selectedPopularTables.Books && popularItemsData.popularBooks.length > 0 && (
-                  <div className="report-section">
-                    <h3>Top 10 Popular Books</h3>
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Title</th>
-                          <th>Author</th>
-                          <th>Borrow Count</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {popularItemsData.popularBooks.map((book, index) => (
-                          <tr key={index}>
-                            <td>{book.Title}</td>
-                            <td>{book.Author}</td>
-                            <td>{book.BorrowCount}</td>
+                {selectedPopularTables.Books &&
+                  popularItemsData.popularBooks.length > 0 && (
+                    <div className="report-section">
+                      <h3>Top 10 Popular Books</h3>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Borrow Count</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        </thead>
+                        <tbody>
+                          {popularItemsData.popularBooks.map((book, index) => (
+                            <tr key={index}>
+                              <td>{book.Title}</td>
+                              <td>{book.Author}</td>
+                              <td>{book.BorrowCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
                 {/* Popular Devices Table */}
-                {selectedPopularTables.Devices && popularItemsData.popularDevices.length > 0 && (
-                  <div className="report-section">
-                    <h3>Top 10 Popular Devices</h3>
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Title</th>
-                          <th>Brand</th>
-                          <th>Model</th>
-                          <th>Borrow Count</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {popularItemsData.popularDevices.map((device, index) => (
-                          <tr key={index}>
-                            <td>{device.Title}</td>
-                            <td>{device.Brand}</td>
-                            <td>{device.Model}</td>
-                            <td>{device.BorrowCount}</td>
+                {selectedPopularTables.Devices &&
+                  popularItemsData.popularDevices.length > 0 && (
+                    <div className="report-section">
+                      <h3>Top 10 Popular Devices</h3>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Brand</th>
+                            <th>Model</th>
+                            <th>Borrow Count</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        </thead>
+                        <tbody>
+                          {popularItemsData.popularDevices.map((device, index) => (
+                            <tr key={index}>
+                              <td>{device.Title}</td>
+                              <td>{device.Brand}</td>
+                              <td>{device.Model}</td>
+                              <td>{device.BorrowCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
                 {/* Popular Magazines Table */}
-                {selectedPopularTables.Magazines && popularItemsData.popularMagazines.length > 0 && (
-                  <div className="report-section">
-                    <h3>Top 10 Popular Magazines</h3>
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Title</th>
-                          <th>Author</th>
-                          <th>Borrow Count</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {popularItemsData.popularMagazines.map((mag, index) => (
-                          <tr key={index}>
-                            <td>{mag.Title}</td>
-                            <td>{mag.Author}</td>
-                            <td>{mag.BorrowCount}</td>
+                {selectedPopularTables.Magazines &&
+                  popularItemsData.popularMagazines.length > 0 && (
+                    <div className="report-section">
+                      <h3>Top 10 Popular Magazines</h3>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Borrow Count</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        </thead>
+                        <tbody>
+                          {popularItemsData.popularMagazines.map((mag, index) => (
+                            <tr key={index}>
+                              <td>{mag.Title}</td>
+                              <td>{mag.Author}</td>
+                              <td>{mag.BorrowCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
                 {/* Popular Media Table */}
-                {selectedPopularTables.Media && popularItemsData.popularMedia.length > 0 && (
-                  <div className="report-section">
-                    <h3>Top 10 Popular Media Items</h3>
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Title</th>
-                          <th>Director</th>
-                          <th>Media Type</th>
-                          <th>Borrow Count</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {popularItemsData.popularMedia.map((media, index) => (
-                          <tr key={index}>
-                            <td>{media.Title}</td>
-                            <td>{media.Director}</td>
-                            <td>{media.MediaType}</td>
-                            <td>{media.BorrowCount}</td>
+                {selectedPopularTables.Media &&
+                  popularItemsData.popularMedia.length > 0 && (
+                    <div className="report-section">
+                      <h3>Top 10 Popular Media Items</h3>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Director</th>
+                            <th>Media Type</th>
+                            <th>Borrow Count</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        </thead>
+                        <tbody>
+                          {popularItemsData.popularMedia.map((media, index) => (
+                            <tr key={index}>
+                              <td>{media.Title}</td>
+                              <td>{media.Director}</td>
+                              <td>{media.MediaType}</td>
+                              <td>{media.BorrowCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
               </>
             )}
           </>
         )}
 
-        {/* User Fines Report UI */}
+        {/* Filter Section for User Fines Report */}
         {currentItemType === 'UserFinesReport' && (
           <>
-            <h2>User Fines Report</h2>
+            <div className="filter-section">
+              <h2>Filter User Fines Report</h2>
+              <div className="filter-controls">
+                <div className="form-control">
+                  <label>
+                    User ID:
+                    {loadingUsers ? (
+                      <select disabled>
+                        <option>Loading...</option>
+                      </select>
+                    ) : (
+                      <select
+                        name="userIdFilter"
+                        value={userIdFilter}
+                        onChange={handleFilterChange}
+                      >
+                        <option value="">All Users</option>
+                        {usersList.map((user) => (
+                          <option key={user.UserID} value={user.UserID}>
+                            {user.UserID} - {user.FirstName} {user.LastName}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </label>
+                </div>
+                <div className="form-control">
+                  <label>
+                    Borrow Date From:
+                    <input
+                      type="date"
+                      name="borrowDateFrom"
+                      value={borrowDateFrom}
+                      onChange={handleFilterChange}
+                    />
+                  </label>
+                </div>
+                <div className="form-control">
+                  <label>
+                    Borrow Date To:
+                    <input
+                      type="date"
+                      name="borrowDateTo"
+                      value={borrowDateTo}
+                      onChange={handleFilterChange}
+                    />
+                  </label>
+                </div>
+                <div className="filter-buttons">
+                  <button className="apply-button" onClick={applyFilters}>
+                    Apply Filters
+                  </button>
+                  <button className="clear-button" onClick={clearFilters}>
+                    Clear Filters
+                  </button>
+                </div>
+              </div>
+              {/* Display filtered user info */}
+              {filteredUserInfo && (
+                <div className="user-info">
+                  <p>
+                    <strong>User:</strong> {filteredUserInfo.fullName}
+                  </p>
+                  <p>
+                    <strong>Current Balance:</strong> $
+                    {parseFloat(filteredUserInfo.balance).toFixed(2)}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* User Fines Report Data Table */}
             {Array.isArray(itemsData) && itemsData.length > 0 ? (
               <div className="table-container">
                 <table className="data-table">
@@ -817,12 +999,12 @@ const AdminDashboard = () => {
           </>
         )}
 
-        {/* Existing report UIs */}
+        {/* Data Table for Other Item Types */}
         {currentItemType !== 'AnnualCostReport' &&
           currentItemType !== 'UserFinesReport' &&
           currentItemType !== 'PopularItemsReport' &&
           Array.isArray(itemsData) &&
-          itemsData.length > 0 ? (
+          itemsData.length > 0 && (
             <div className="table-container">
               <table className="data-table">
                 <thead>
@@ -857,8 +1039,11 @@ const AdminDashboard = () => {
                       })}
                       {currentItemType !== 'UserFinesReport' && (
                         <td>
-                          <button onClick={() => handleEdit(item)}>Edit</button>
+                          <button className="edit-button" onClick={() => handleEdit(item)}>
+                            Edit
+                          </button>
                           <button
+                            className="delete-button"
                             onClick={() =>
                               handleDelete(item[itemFields[currentItemType][0].key])
                             }
@@ -872,22 +1057,14 @@ const AdminDashboard = () => {
                 </tbody>
               </table>
             </div>
-          ) : currentItemType !== 'AnnualCostReport' &&
-            currentItemType !== 'UserFinesReport' &&
-            currentItemType !== 'PopularItemsReport' &&
-            Array.isArray(itemsData) &&
-            itemsData.length === 0 ? (
-            <p>No records found.</p>
-          ) : null}
+          )}
 
         {/* Form to add or edit items */}
         {currentItemType !== 'UserFinesReport' &&
           currentItemType !== 'AnnualCostReport' &&
           currentItemType !== 'PopularItemsReport' && (
             <>
-              <h2>
-                {isEditing ? 'Edit' : 'Add New'} {currentItemType}
-              </h2>
+              <h2>{isEditing ? 'Edit' : 'Add New'} {currentItemType}</h2>
               <form onSubmit={handleFormSubmit} className="dashboard-form">
                 {itemFields[currentItemType].map((field) => (
                   <div key={field.key} className="form-control">
@@ -927,9 +1104,11 @@ const AdminDashboard = () => {
                   </div>
                 ))}
                 <div className="form-buttons">
-                  <button type="submit">{isEditing ? 'Update' : 'Add'}</button>
+                  <button className="submit-button" type="submit">
+                    {isEditing ? 'Update' : 'Add'}
+                  </button>
                   {isEditing && (
-                    <button type="button" onClick={handleAddNew}>
+                    <button className="cancel-button" type="button" onClick={handleAddNew}>
                       Cancel
                     </button>
                   )}
@@ -943,16 +1122,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-
-
-
-
-
-
-
-
-
-
-
-

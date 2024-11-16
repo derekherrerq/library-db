@@ -1,179 +1,123 @@
+/* Dashboard Container */
 .dashboard-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f0f2f5;
-    padding: 20px;
-  }
-  
-  .dashboard-content {
-    background-color: #ffffff;
-    padding: 40px;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 1200px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Heading Styles */
-  h1, h2 {
-    margin-bottom: 20px;
-    color: #333333;
-    text-align: center;
-  }
-  
-  /* Button Group Styles */
-  .button-group {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 30px;
-  }
-  
-  .button-group button {
-    margin: 5px;
-    padding: 10px 15px;
-    font-size: 14px;
-    cursor: pointer;
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-  }
-  
-  .button-group button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* Table Styles */
-  .table-container {
-    overflow-x: auto;
-    margin-bottom: 40px;
-  }
-  
-  .data-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .data-table th,
-  .data-table td {
-    border: 1px solid #cccccc;
-    padding: 12px;
-    text-align: left;
-  }
-  
-  .data-table th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-  }
-  
-  .data-table tr:nth-child(even) {
-    background-color: #fdfdfe;
-  }
-  
-  .data-table tr:hover {
-    background-color: #f1f1f1;
-  }
-  
-  .data-table td button {
-    margin-right: 5px;
-    padding: 6px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-  }
-  
-  .data-table td button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* Form Styles */
-  .dashboard-form {
-    display: flex;
-    flex-direction: column;
-    margin: 0 auto;
-    max-width: 500px;
-    animation: fade-up 0.5s ease-out;
-  }
-  
-  .form-control {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 20px;
-  }
-  
-  .form-control label {
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #333333;
-  }
-  
-  .form-control input {
-    padding: 10px;
-    border: 1px solid #cccccc;
-    border-radius: 4px;
-    font-size: 16px;
-  }
-  
-  .form-control input:focus {
-    border-color: #007bff;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-  }
-  
-  /* Form Buttons */
-  .form-buttons {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-  }
-  
-  .form-buttons button {
-    margin: 5px;
-    padding: 12px 20px;
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .form-buttons button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* Animation */
-  @keyframes fade-up {
-    0% {
-      opacity: 0;
-      transform: translateY(30px) scale(0.95);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0px) scale(1);
-    }
-  }
-  
-  /* Responsive Styles */
-  @media (max-width: 768px) {
-    .dashboard-content {
-      padding: 20px;
-    }
-  
-    .form-control {
-      margin-bottom: 15px;
-    }
-  
-    .form-buttons button {
-      width: 100%;
-      margin: 5px 0;
-    }
-  }  
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Dashboard Header */
+.dashboard-content h1 {
+  text-align: center;
+  color: #343a40;
+  margin-bottom: 20px;
+}
+
+/* Balance and Borrow Limit Information */
+.balance-container, .borrow-limit-container, .suspended-status {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px auto;
+  max-width: 500px;
+  text-align: center;
+  color: #495057;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Message */
+.message {
+  text-align: center;
+  color: #0dff00;
+  font-size: 2em;
+  margin: 10px;
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.button-group button {
+  padding: 10px 20px;
+  font-size: 1em;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.button-group button.active {
+  background-color: #0056b3;
+}
+
+.button-group button:hover:not(.active) {
+  background-color: #0056b3;
+}
+
+.button-group button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Table Styling */
+.table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: 0 4px 8px rgba(179, 16, 16, 0.1);
+  margin-bottom: 20px;
+}
+
+.data-table th, .data-table td {
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+}
+
+.data-table th {
+  background-color: #343a40;
+  color: #ffffff;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.data-table button {
+  padding: 5px 10px;
+  font-size: 0.9em;
+  color: #ffffff;
+  background-color: #28a745;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.data-table button:hover {
+  background-color: #218838;
+}
+
+/* Suspension Warning */
+.suspension-warning {
+  text-align: center;
+  color: #dc3545;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.suspended-status p {
+  color: #dc3545;
+  font-size: 1em;
+}
