@@ -7,6 +7,7 @@ import PrivateRoute from './components/Authentication/PrivateRoute';
 
 const NavBar = lazy(() => import('./components/Navbar/Navbar'));
 const Home = lazy(() => import('./pages/Home/Home'));
+const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage')); // Import the Landing Page
 const Login = lazy(() => import('./pages/Login/Login'));
 const Register = lazy(() => import('./pages/Register/Register'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
@@ -23,9 +24,12 @@ const App = () => {
           <NavBar />
           <div className="main-content">
             <Routes>
+              {/* Landing Page Route */}
+              <Route path="/" element={<LandingPage />} /> {/* Publicly accessible landing page */}
+
               {/* Protected Home Route */}
               <Route
-                path="/"
+                path="/home"
                 element={
                   <PrivateRoute>
                     <Home />

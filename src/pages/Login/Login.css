@@ -16,7 +16,9 @@ body, html {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #ffffff;
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+              url('/src/Images/back.jpg') right center / cover no-repeat;
+
   padding: 20px;
 }
 

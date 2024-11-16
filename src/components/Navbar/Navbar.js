@@ -21,17 +21,17 @@ const NavBar = () => {
     <Navbar className="main-nav" expand="md">
       <div className="navbar-left">
         <Nav className="left-nav">
-          <ActiveListItem url="/" name="Home" />
-          {role === 'Admin' && <ActiveListItem url="/admin-dashboard" name="Admin Dashboard" />}
-          {role === 'Staff' && <ActiveListItem url="/staff-dashboard" name="Staff Dashboard" />}
-          <ActiveListItem url="/user-dashboard" name="User Dashboard" />
+          <ActiveListItem url="/" name="Home " />
+          {role === 'Admin' && <ActiveListItem url="/admin-dashboard" name="Admin Dashboard " />}
+          {role === 'Staff' && <ActiveListItem url="/staff-dashboard" name="Staff Dashboard " />}
+          <ActiveListItem url="/user-dashboard" name="  User Dashboard" />
         </Nav>
       </div>
       
       <div className="navbar-center">
         <LinkContainer to="/">
           <Navbar.Brand className="brand-text">
-            <i className="fas fa-book-open brand-icon"></i> Library DB
+            <i className="fas fa-book-open brand-icon"></i> Cougar Library
           </Navbar.Brand>
         </LinkContainer>
       </div>
