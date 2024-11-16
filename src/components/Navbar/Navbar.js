@@ -24,9 +24,9 @@ const NavBar = () => {
         {isAuthenticated && (
           <Nav className="left-nav">
             <ActiveListItem url="/" name="Home" />
-            <ActiveListItem url="/user-dashboard" name="User Dashboard" />
             {role === 'Admin' && <ActiveListItem url="/admin-dashboard" name="Admin Dashboard" />}
             {role === 'Staff' && <ActiveListItem url="/staff-dashboard" name="Staff Dashboard" />}
+            <ActiveListItem url="/user-dashboard" name="User Dashboard" />
           </Nav>
         )}
       </div>
