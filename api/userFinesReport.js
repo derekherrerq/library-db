@@ -14,7 +14,22 @@ const pool = mysql.createPool({
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      const [rows] = await pool.query(`
+      const { action, UserID, BorrowDateFrom, BorrowDateTo } = req.query;
+
+      if (action === 'getUsers') {
+        // Fetch the list of users
+        const [users] = await pool.query(`
+          SELECT UserID, FirstName, LastName
+          FROM Users
+          WHERE IsDeleted = 0
+          ORDER BY UserID ASC;
+        `);
+        res.status(200).json(users);
+        return;
+      }
+
+      // Proceed to fetch the User Fines Report
+      let query = `
         SELECT
           u.UserID,
           u.FirstName,
@@ -44,15 +59,33 @@ export default async function handler(req, res) {
         LEFT JOIN ItemMagazine ima ON br.MagID = ima.MagazineID AND ima.IsDeleted = 0
         WHERE
           (u.Balance > 0 OR br.FineAmount > 0) AND u.IsDeleted = 0
-        ORDER BY
-          u.UserID,
-          br.BorrowDate DESC;
-      `);
+      `;
+
+      const params = [];
+
+      if (UserID) {
+        query += ' AND u.UserID = ?';
+        params.push(UserID);
+      }
+
+      if (BorrowDateFrom) {
+        query += ' AND br.BorrowDate >= ?';
+        params.push(BorrowDateFrom);
+      }
+
+      if (BorrowDateTo) {
+        query += ' AND br.BorrowDate <= ?';
+        params.push(BorrowDateTo);
+      }
+
+      query += ' ORDER BY u.UserID, br.BorrowDate DESC;';
+
+      const [rows] = await pool.query(query, params);
 
       res.status(200).json(rows);
     } catch (error) {
-      console.error('Error fetching user fines report:', error);
-      res.status(500).json({ error: 'Failed to fetch user fines report' });
+      console.error('Error in userFinesReport:', error);
+      res.status(500).json({ error: 'Failed to fetch data' });
     }
   } else {
     res.setHeader('Allow', ['GET']);

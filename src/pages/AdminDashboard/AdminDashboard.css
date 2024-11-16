@@ -47,7 +47,7 @@
   margin-bottom: 20px;
 }
 
-.button-group button {
+.item-type-button {
   padding: 10px 20px;
   font-size: 1em;
   background-color: #007bff;
@@ -58,11 +58,11 @@
   transition: background-color 0.3s;
 }
 
-.button-group button:hover {
+.item-type-button:hover {
   background-color: #0056b3;
 }
 
-.button-group button:disabled {
+.item-type-button:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
 }
@@ -99,19 +99,33 @@
   background-color: #e9ecef;
 }
 
-.data-table td button {
+.data-table td .edit-button,
+.data-table td .delete-button {
   padding: 5px 10px;
   font-size: 0.9em;
-  color: #ffffff;
-  background-color: #28a745;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: opacity 0.3s;
 }
 
-.data-table td button:hover {
-  background-color: #218838;
+.data-table td .edit-button {
+  background-color: #ffc107;
+  color: #ffffff;
+  margin-right: 5px;
+}
+
+.data-table td .edit-button:hover {
+  opacity: 0.8;
+}
+
+.data-table td .delete-button {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.data-table td .delete-button:hover {
+  opacity: 0.8;
 }
 
 /* Suspension Warning */
@@ -152,14 +166,16 @@
   color: #333333;
 }
 
-.form-control input {
+.form-control input,
+.form-control select {
   padding: 10px;
   border: 1px solid #cccccc;
   border-radius: 4px;
   font-size: 16px;
 }
 
-.form-control input:focus {
+.form-control input:focus,
+.form-control select:focus {
   border-color: #007bff;
   outline: none;
   box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
@@ -169,11 +185,11 @@
 .form-buttons {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
   gap: 10px;
 }
 
-.form-buttons button {
+.submit-button,
+.cancel-button {
   padding: 12px 20px;
   background-color: #007bff;
   color: #ffffff;
@@ -184,20 +200,54 @@
   transition: background-color 0.3s;
 }
 
-.form-buttons button:hover {
+.submit-button:hover {
   background-color: #0056b3;
 }
 
-/* Animation */
-@keyframes fade-up {
-  0% {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.cancel-button {
+  background-color: #6c757d;
+}
+
+.cancel-button:hover {
+  background-color: #5a6268;
+}
+
+/* Filter Buttons */
+.filter-buttons .apply-button {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.filter-buttons .apply-button:hover {
+  background-color: #218838;
+}
+
+.filter-buttons .clear-button {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.filter-buttons .clear-button:hover {
+  background-color: #c82333;
+}
+
+/* User Info Section */
+.user-info {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 5px;
 }
 
 /* Responsive Design */
@@ -210,7 +260,8 @@
     margin-bottom: 15px;
   }
 
-  .form-buttons button {
+  .form-buttons button,
+  .filter-buttons button {
     width: 100%;
     margin: 5px 0;
   }

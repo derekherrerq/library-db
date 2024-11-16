@@ -116,14 +116,34 @@ const AdminDashboard = () => {
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
 
+  const [userIdFilter, setUserIdFilter] = useState('');
+  const [borrowDateFrom, setBorrowDateFrom] = useState('');
+  const [borrowDateTo, setBorrowDateTo] = useState('');
+  const [filteredUserInfo, setFilteredUserInfo] = useState(null);
+  const [usersList, setUsersList] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   const fetchItems = async (table) => {
     try {
-      let response;
+      let url = '';
       if (table === 'UserFinesReport') {
-        response = await fetch(`/api/userFinesReport`);
+        // Append query parameters if filters are applied
+        const params = new URLSearchParams();
+        if (userIdFilter.trim() !== '') {
+          params.append('UserID', userIdFilter.trim());
+        }
+        if (borrowDateFrom !== '') {
+          params.append('BorrowDateFrom', borrowDateFrom);
+        }
+        if (borrowDateTo !== '') {
+          params.append('BorrowDateTo', borrowDateTo);
+        }
+        url = `/api/userFinesReport?${params.toString()}`;
       } else {
-        response = await fetch(`/api/pullAPI?table=${table}`);
+        url = `/api/pullAPI?table=${table}`;
       }
+
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch ${table} data`);
@@ -131,9 +151,38 @@ const AdminDashboard = () => {
       const data = await response.json();
       console.log(`Fetched ${table} data:`, data);
       setItemsData(data);
+
+      // If UserFinesReport and data exists, set filtered user info
+      if (table === 'UserFinesReport' && data.length > 0) {
+        const user = data[0]; // Assuming all records are for the same user when filtered
+        setFilteredUserInfo({
+          fullName: `${user.FirstName} ${user.LastName}`,
+          balance: user.UserBalance,
+        });
+      } else {
+        setFilteredUserInfo(null);
+      }
     } catch (error) {
       console.error('Error:', error);
       alert(error.message);
+    }
+  };
+
+  // Function to fetch users for the dropdown using the same endpoint
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await fetch('/api/userFinesReport?action=getUsers');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const users = await response.json();
+      setUsersList(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      alert(error.message);
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -146,6 +195,16 @@ const AdminDashboard = () => {
     fetchItems(itemType);
     setFormData({});
     setIsEditing(false);
+    // Reset filters when changing item type
+    setUserIdFilter('');
+    setBorrowDateFrom('');
+    setBorrowDateTo('');
+    setFilteredUserInfo(null);
+
+    // If UserFinesReport is selected, fetch the list of users
+    if (itemType === 'UserFinesReport') {
+      fetchUsers();
+    }
   };
 
   const handleInputChange = (e, field) => {
@@ -157,6 +216,30 @@ const AdminDashboard = () => {
     }
 
     setFormData({ ...formData, [name]: newValue });
+  };
+
+  // Handlers for filter inputs
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'userIdFilter') {
+      setUserIdFilter(value);
+    } else if (name === 'borrowDateFrom') {
+      setBorrowDateFrom(value);
+    } else if (name === 'borrowDateTo') {
+      setBorrowDateTo(value);
+    }
+  };
+
+  const applyFilters = () => {
+    fetchItems('UserFinesReport');
+  };
+
+  const clearFilters = () => {
+    setUserIdFilter('');
+    setBorrowDateFrom('');
+    setBorrowDateTo('');
+    setFilteredUserInfo(null);
+    fetchItems('UserFinesReport');
   };
 
   const handleAddNew = () => {
@@ -287,16 +370,106 @@ const AdminDashboard = () => {
         <h1>Admin Dashboard</h1>
         {/* Buttons to select the item type */}
         <div className="button-group">
-          <button onClick={() => handleItemTypeChange('BorrowRecord')}>Borrow Records</button>
-          <button onClick={() => handleItemTypeChange('ItemBook')}>Books</button>
-          <button onClick={() => handleItemTypeChange('ItemDevices')}>Devices</button>
-          <button onClick={() => handleItemTypeChange('ItemMagazine')}>Magazines</button>
-          <button onClick={() => handleItemTypeChange('ItemMedia')}>Media</button>
-          <button onClick={() => handleItemTypeChange('Users')}>Users</button>
-          <button onClick={() => handleItemTypeChange('Employee')}>Employee</button>
-          <button onClick={() => handleItemTypeChange('UserFinesReport')}>User Fines Report</button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('BorrowRecord')}>
+            Borrow Records
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('ItemBook')}>
+            Books
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('ItemDevices')}>
+            Devices
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('ItemMagazine')}>
+            Magazines
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('ItemMedia')}>
+            Media
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('Users')}>
+            Users
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('Employee')}>
+            Employee
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('UserFinesReport')}>
+            User Fines Report
+          </button>
         </div>
 
+        {/* Filter Section for User Fines Report */}
+        {currentItemType === 'UserFinesReport' && (
+          <div className="filter-section">
+            <h2>Filter User Fines Report</h2>
+            <div className="filter-controls">
+              <div className="form-control">
+                <label>
+                  User ID:
+                  {loadingUsers ? (
+                    <select disabled>
+                      <option>Loading...</option>
+                    </select>
+                  ) : (
+                    <select
+                      name="userIdFilter"
+                      value={userIdFilter}
+                      onChange={handleFilterChange}
+                    >
+                      <option value="">All Users</option>
+                      {usersList.map((user) => (
+                        <option key={user.UserID} value={user.UserID}>
+                          {user.UserID} - {user.FirstName} {user.LastName}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </label>
+              </div>
+              <div className="form-control">
+                <label>
+                  Borrow Date From:
+                  <input
+                    type="date"
+                    name="borrowDateFrom"
+                    value={borrowDateFrom}
+                    onChange={handleFilterChange}
+                  />
+                </label>
+              </div>
+              <div className="form-control">
+                <label>
+                  Borrow Date To:
+                  <input
+                    type="date"
+                    name="borrowDateTo"
+                    value={borrowDateTo}
+                    onChange={handleFilterChange}
+                  />
+                </label>
+              </div>
+              <div className="filter-buttons">
+                <button className="apply-button" onClick={applyFilters}>
+                  Apply Filters
+                </button>
+                <button className="clear-button" onClick={clearFilters}>
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+            {/* Display filtered user info */}
+            {filteredUserInfo && (
+              <div className="user-info">
+                <p>
+                  <strong>User:</strong> {filteredUserInfo.fullName}
+                </p>
+                <p>
+                  <strong>Current Balance:</strong> ${parseFloat(filteredUserInfo.balance).toFixed(2)}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Data Table */}
         {itemsData.length > 0 ? (
           <div className="table-container">
             <table className="data-table">
@@ -332,8 +505,11 @@ const AdminDashboard = () => {
                     })}
                     {currentItemType !== 'UserFinesReport' && (
                       <td>
-                        <button onClick={() => handleEdit(item)}>Edit</button>
+                        <button className="edit-button" onClick={() => handleEdit(item)}>
+                          Edit
+                        </button>
                         <button
+                          className="delete-button"
                           onClick={() =>
                             handleDelete(item[itemFields[currentItemType][0].key])
                           }
@@ -396,9 +572,11 @@ const AdminDashboard = () => {
                 </div>
               ))}
               <div className="form-buttons">
-                <button type="submit">{isEditing ? 'Update' : 'Add'}</button>
+                <button className="submit-button" type="submit">
+                  {isEditing ? 'Update' : 'Add'}
+                </button>
                 {isEditing && (
-                  <button type="button" onClick={handleAddNew}>
+                  <button className="cancel-button" type="button" onClick={handleAddNew}>
                     Cancel
                   </button>
                 )}
