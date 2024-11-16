@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Nav, Navbar } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { AuthContext } from '../Authentication/AuthContext';
+import NotificationBell from './NotificationBell/NotificationBell';
 import './Navbar.css';
 
 function ActiveListItem({ url, name }) {
@@ -36,15 +37,18 @@ const NavBar = () => {
         </LinkContainer>
       </div>
 
-      {isAuthenticated && (
-        <div className="navbar-right">
-          <Nav className="ml-auto">
-            <Nav.Link onClick={logout} className="nav-link-custom logout-button">
-              Logout
-            </Nav.Link>
-          </Nav>
-        </div>
-      )}
+      <div className="navbar-right">
+        <Nav className="ml-auto">
+          {isAuthenticated && (
+            <>
+              <NotificationBell />
+              <Nav.Link onClick={logout} className="nav-link-custom logout-button">
+                Logout
+              </Nav.Link>
+            </>
+          )}
+        </Nav>
+      </div>
     </Navbar>
   );
 };
