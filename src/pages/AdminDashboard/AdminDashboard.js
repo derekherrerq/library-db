@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './AdminDashboard.css';
 
 const itemFields = {
@@ -110,12 +110,33 @@ const itemFields = {
 };
 
 const AdminDashboard = () => {
+  // State variables
   const [itemsData, setItemsData] = useState([]);
   const [currentItemType, setCurrentItemType] = useState('ItemBook');
-
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState({
+    Book: true,
+    Device: true,
+    Magazine: true,
+    Media: true,
+  });
+  const [popularItemsData, setPopularItemsData] = useState({
+    popularBooks: [],
+    popularDevices: [],
+    popularMagazines: [],
+    popularMedia: [],
+  });
+  const [selectedPopularTables, setSelectedPopularTables] = useState({
+    Books: true,
+    Devices: true,
+    Magazines: true,
+    Media: true,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [userIdFilter, setUserIdFilter] = useState('');
   const [borrowDateFrom, setBorrowDateFrom] = useState('');
   const [borrowDateTo, setBorrowDateTo] = useState('');
@@ -123,52 +144,116 @@ const AdminDashboard = () => {
   const [usersList, setUsersList] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  const fetchItems = async (table) => {
-    try {
-      let url = '';
-      if (table === 'UserFinesReport') {
-        // Append query parameters if filters are applied
-        const params = new URLSearchParams();
-        if (userIdFilter.trim() !== '') {
-          params.append('UserID', userIdFilter.trim());
-        }
-        if (borrowDateFrom !== '') {
-          params.append('BorrowDateFrom', borrowDateFrom);
-        }
-        if (borrowDateTo !== '') {
-          params.append('BorrowDateTo', borrowDateTo);
-        }
-        url = `/api/userFinesReport?${params.toString()}`;
-      } else {
-        url = `/api/pullAPI?table=${table}`;
-      }
+  // Fetch Functions
+  const fetchItems = useCallback(
+    async (table) => {
+      console.log(`Fetching data for table: ${table}`);
+      try {
+        let response;
+        let url = '';
 
-      const response = await fetch(url);
+        if (table === 'UserFinesReport') {
+          // Append query parameters if filters are applied
+          const params = new URLSearchParams();
+          if (userIdFilter.trim() !== '') {
+            params.append('UserID', userIdFilter.trim());
+          }
+          if (borrowDateFrom !== '') {
+            params.append('BorrowDateFrom', borrowDateFrom);
+          }
+          if (borrowDateTo !== '') {
+            params.append('BorrowDateTo', borrowDateTo);
+          }
+          url = `/api/userFinesReport?${params.toString()}`;
+        } else if (table === 'AnnualCostReport') {
+          // Check if at least one category is selected
+          const categoriesSelected = Object.values(selectedCategories).some((val) => val);
+          if (!reportStartDate || !reportEndDate || !categoriesSelected) {
+            console.log('AnnualCostReport: Missing parameters. Skipping fetch.');
+            setItemsData([]);
+            return;
+          }
+
+          const categories = Object.keys(selectedCategories)
+            .filter((cat) => selectedCategories[cat])
+            .join(',');
+          url = `/api/annualCostReport?startDate=${reportStartDate}&endDate=${reportEndDate}&categories=${categories}`;
+          console.log(`Fetching AnnualCostReport with URL: ${url}`);
+        } else {
+          url = `/api/pullAPI?table=${table}`;
+        }
+
+        console.log(`Fetching data from URL: ${url}`);
+        response = await fetch(url);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(`Error fetching ${table}:`, errorData);
+          throw new Error(errorData.error || `Failed to fetch ${table} data`);
+        }
+        const data = await response.json();
+        console.log(`Fetched data for ${table}:`, data);
+        setItemsData(data);
+
+        // If UserFinesReport and data exists, set filtered user info
+        if (table === 'UserFinesReport' && data.length > 0) {
+          const user = data[0]; // Assuming all records are for the same user when filtered
+          setFilteredUserInfo({
+            fullName: `${user.FirstName} ${user.LastName}`,
+            balance: user.UserBalance,
+          });
+        } else if (table === 'UserFinesReport') {
+          setFilteredUserInfo(null);
+        }
+      } catch (error) {
+        console.error(`Error in fetchItems for ${table}:`, error);
+        alert(error.message);
+      }
+    },
+    [
+      reportStartDate,
+      reportEndDate,
+      selectedCategories,
+      userIdFilter,
+      borrowDateFrom,
+      borrowDateTo,
+    ]
+  );
+
+  const fetchPopularItemsReport = useCallback(async () => {
+    if (!reportStartDate || !reportEndDate) {
+      alert('Please select both start and end dates.');
+      console.log('PopularItemsReport: Missing start or end date.');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage('');
+    console.log('Fetching PopularItemsReport...');
+
+    try {
+      const response = await fetch(
+        `/api/popularItemsReport?startDate=${reportStartDate}&endDate=${reportEndDate}`
+      );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch ${table} data`);
+        const errorData = await response.json();
+        console.error('Error fetching PopularItemsReport:', errorData);
+        throw new Error(errorData.error || 'Failed to fetch Popular Items Report');
       }
       const data = await response.json();
-      console.log(`Fetched ${table} data:`, data);
-      setItemsData(data);
-
-      // If UserFinesReport and data exists, set filtered user info
-      if (table === 'UserFinesReport' && data.length > 0) {
-        const user = data[0]; // Assuming all records are for the same user when filtered
-        setFilteredUserInfo({
-          fullName: `${user.FirstName} ${user.LastName}`,
-          balance: user.UserBalance,
-        });
-      } else {
-        setFilteredUserInfo(null);
-      }
+      console.log('Fetched PopularItemsReport data:', data);
+      setPopularItemsData(data);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error in fetchPopularItemsReport:', error);
+      setErrorMessage(error.message);
       alert(error.message);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [reportStartDate, reportEndDate]);
 
-  // Function to fetch users for the dropdown using the same endpoint
+  // Function to fetch users for the dropdown
   const fetchUsers = async () => {
     setLoadingUsers(true);
     try {
@@ -186,20 +271,36 @@ const AdminDashboard = () => {
     }
   };
 
+  // Effect to fetch data when currentItemType changes
   useEffect(() => {
-    fetchItems(currentItemType);
-  }, [currentItemType]);
+    if (currentItemType !== 'PopularItemsReport') {
+      fetchItems(currentItemType);
+    }
+  }, [currentItemType, fetchItems]);
 
+  // Handler for changing the report type
   const handleItemTypeChange = (itemType) => {
+    console.log(`Changing report type to: ${itemType}`);
     setCurrentItemType(itemType);
-    fetchItems(itemType);
     setFormData({});
     setIsEditing(false);
-    // Reset filters when changing item type
+    setErrorMessage('');
+
+    // Reset filters
     setUserIdFilter('');
     setBorrowDateFrom('');
     setBorrowDateTo('');
     setFilteredUserInfo(null);
+
+    if (itemType === 'PopularItemsReport') {
+      // Clear previous popular items data
+      setPopularItemsData({
+        popularBooks: [],
+        popularDevices: [],
+        popularMagazines: [],
+        popularMedia: [],
+      });
+    }
 
     // If UserFinesReport is selected, fetch the list of users
     if (itemType === 'UserFinesReport') {
@@ -207,6 +308,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Handlers for form inputs
   const handleInputChange = (e, field) => {
     const { name, value, type, checked } = e.target;
     let newValue = value;
@@ -216,6 +318,7 @@ const AdminDashboard = () => {
     }
 
     setFormData({ ...formData, [name]: newValue });
+    console.log(`Form data updated: ${name} = ${newValue}`);
   };
 
   // Handlers for filter inputs
@@ -243,11 +346,13 @@ const AdminDashboard = () => {
   };
 
   const handleAddNew = () => {
+    console.log('Adding new item.');
     setFormData({});
     setIsEditing(false);
   };
 
   const handleEdit = (item) => {
+    console.log('Editing item:', item);
     const processedItem = { ...item };
     const fields = itemFields[currentItemType];
 
@@ -269,10 +374,13 @@ const AdminDashboard = () => {
 
     setFormData(processedItem);
     setIsEditing(true);
+    console.log('Form data for editing:', processedItem);
   };
 
   const handleDelete = async (itemID) => {
+    console.log(`Deleting item with ID: ${itemID}`);
     if (!window.confirm('Are you sure you want to delete this item?')) {
+      console.log('Delete action canceled by user.');
       return;
     }
     try {
@@ -282,13 +390,16 @@ const AdminDashboard = () => {
         body: JSON.stringify({ [itemFields[currentItemType][0].key]: itemID }),
       });
       if (!response.ok) {
-        throw new Error('Failed to delete item');
+        const errorData = await response.json();
+        console.error(`Error deleting item from ${currentItemType}:`, errorData);
+        throw new Error(errorData.error || 'Failed to delete item');
       }
       await response.json();
       alert('Item deleted successfully.');
+      console.log(`Item with ID ${itemID} deleted successfully.`);
       fetchItems(currentItemType);
     } catch (error) {
-      console.error('Error deleting item:', error);
+      console.error('Error in handleDelete:', error);
       alert(error.message);
     }
   };
@@ -302,7 +413,10 @@ const AdminDashboard = () => {
         (!MagID || MagID.trim() === '') &&
         (!MediaID || MediaID.trim() === '')
       ) {
-        alert('At least one of Book ISBN, Device ID, Magazine ID, or Media ID must be provided.');
+        alert(
+          'At least one of Book ISBN, Device ID, Magazine ID, or Media ID must be provided.'
+        );
+        console.log('Validation failed: Missing BookISBN, DeviceID, MagID, or MediaID.');
         return false;
       }
     }
@@ -311,6 +425,7 @@ const AdminDashboard = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted.');
 
     if (!validateForm()) {
       return;
@@ -344,24 +459,51 @@ const AdminDashboard = () => {
         }
       });
 
+      console.log(
+        `Sending ${method} request to /api/pullAPI?table=${currentItemType} with data:`,
+        dataToSend
+      );
+
       const response = await fetch(`/api/pullAPI?table=${currentItemType}`, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend),
       });
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'add'} item`);
+        console.error(`Error in handleFormSubmit (${method}):`, errorData);
+        throw new Error(errorData.error || `Failed to ${isEditing ? 'update' : 'add'} item`);
       }
+
       await response.json();
       alert(`Item ${isEditing ? 'updated' : 'added'} successfully.`);
+      console.log(`Item ${isEditing ? 'updated' : 'added'} successfully.`);
       fetchItems(currentItemType);
       setFormData({});
       setIsEditing(false);
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Error in handleFormSubmit:', error);
       alert(error.message);
     }
+  };
+
+  const handleCategoryChange = (e) => {
+    const { name, checked } = e.target;
+    setSelectedCategories({ ...selectedCategories, [name]: checked });
+    console.log(`Category ${name} set to ${checked}`);
+  };
+
+  const handlePopularTableChange = (e) => {
+    const { name, checked } = e.target;
+    setSelectedPopularTables({ ...selectedPopularTables, [name]: checked });
+    console.log(`Popular Table ${name} set to ${checked}`);
+  };
+
+  // Calculate total spending across all selected categories
+  const calculateTotalSpending = () => {
+    if (!itemsData.totalCosts) return 0;
+    return itemsData.totalCosts.reduce((acc, curr) => acc + curr.totalCost, 0);
   };
 
   return (
@@ -394,196 +536,586 @@ const AdminDashboard = () => {
           <button className="item-type-button" onClick={() => handleItemTypeChange('UserFinesReport')}>
             User Fines Report
           </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('AnnualCostReport')}>
+            Total Spending Report
+          </button>
+          <button className="item-type-button" onClick={() => handleItemTypeChange('PopularItemsReport')}>
+            Popular Items Report
+          </button>
         </div>
+
+        {/* Total Spending Report UI */}
+        {currentItemType === 'AnnualCostReport' && (
+          <>
+            <h2>Total Spending Report</h2>
+            <div className="report-filters">
+              <label>
+                Start Date:
+                <input
+                  type="date"
+                  value={reportStartDate}
+                  onChange={(e) => setReportStartDate(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                End Date:
+                <input
+                  type="date"
+                  value={reportEndDate}
+                  onChange={(e) => setReportEndDate(e.target.value)}
+                  required
+                />
+              </label>
+              <div className="category-filters">
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Book"
+                    checked={selectedCategories.Book}
+                    onChange={handleCategoryChange}
+                  />
+                  Books
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Device"
+                    checked={selectedCategories.Device}
+                    onChange={handleCategoryChange}
+                  />
+                  Devices
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Magazine"
+                    checked={selectedCategories.Magazine}
+                    onChange={handleCategoryChange}
+                  />
+                  Magazines
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Media"
+                    checked={selectedCategories.Media}
+                    onChange={handleCategoryChange}
+                  />
+                  Media
+                </label>
+              </div>
+              <button onClick={() => fetchItems('AnnualCostReport')}>Generate Report</button>
+            </div>
+
+            {/* Display total spending across selected categories */}
+            {itemsData.totalCosts && Object.values(selectedCategories).some((val) => val) && (
+              <div className="report-summary">
+                <p>Total Spending: ${calculateTotalSpending().toFixed(2)}</p>
+              </div>
+            )}
+
+            {/* Display total spending per category */}
+            {itemsData.totalCosts && (
+              <div className="report-summary">
+                {selectedCategories.Book ? (
+                  <p>
+                    Books Total: $
+                    {itemsData.totalCosts
+                      .find((c) => c.category === 'Book')
+                      ?.totalCost.toFixed(2) || '0.00'}
+                  </p>
+                ) : (
+                  <p>Books Total: N/A</p>
+                )}
+
+                {selectedCategories.Device ? (
+                  <p>
+                    Devices Total: $
+                    {itemsData.totalCosts
+                      .find((c) => c.category === 'Device')
+                      ?.totalCost.toFixed(2) || '0.00'}
+                  </p>
+                ) : (
+                  <p>Devices Total: N/A</p>
+                )}
+
+                {selectedCategories.Magazine ? (
+                  <p>
+                    Magazines Total: $
+                    {itemsData.totalCosts
+                      .find((c) => c.category === 'Magazine')
+                      ?.totalCost.toFixed(2) || '0.00'}
+                  </p>
+                ) : (
+                  <p>Magazines Total: N/A</p>
+                )}
+
+                {selectedCategories.Media ? (
+                  <p>
+                    Media Total: $
+                    {itemsData.totalCosts
+                      .find((c) => c.category === 'Media')
+                      ?.totalCost.toFixed(2) || '0.00'}
+                  </p>
+                ) : (
+                  <p>Media Total: N/A</p>
+                )}
+              </div>
+            )}
+
+            {/* Display items if any categories are selected */}
+            {selectedCategories.Book ||
+            selectedCategories.Device ||
+            selectedCategories.Magazine ||
+            selectedCategories.Media ? (
+              itemsData.items && itemsData.items.length > 0 ? (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Item Type</th>
+                        <th>Item ID</th>
+                        <th>Title</th>
+                        <th>Cost</th>
+                        <th>Purchased Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itemsData.items.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.ItemType}</td>
+                          <td>{item.ItemID}</td>
+                          <td>{item.Title}</td>
+                          <td>${parseFloat(item.Cost).toFixed(2)}</td>
+                          <td>{new Date(item.CreatedAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p>No records found for the selected time frame.</p>
+              )
+            ) : (
+              <p>
+                No categories selected. Please select at least one category to view the report.
+              </p>
+            )}
+          </>
+        )}
+
+        {/* Popular Items Report UI */}
+        {currentItemType === 'PopularItemsReport' && (
+          <>
+            <h2>Popular Items Report</h2>
+            <div className="report-filters">
+              <label>
+                Start Date:
+                <input
+                  type="date"
+                  value={reportStartDate}
+                  onChange={(e) => setReportStartDate(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                End Date:
+                <input
+                  type="date"
+                  value={reportEndDate}
+                  onChange={(e) => setReportEndDate(e.target.value)}
+                  required
+                />
+              </label>
+              <div className="popular-category-filters">
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Books"
+                    checked={selectedPopularTables.Books}
+                    onChange={handlePopularTableChange}
+                  />
+                  Books
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Devices"
+                    checked={selectedPopularTables.Devices}
+                    onChange={handlePopularTableChange}
+                  />
+                  Devices
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Magazines"
+                    checked={selectedPopularTables.Magazines}
+                    onChange={handlePopularTableChange}
+                  />
+                  Magazines
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="Media"
+                    checked={selectedPopularTables.Media}
+                    onChange={handlePopularTableChange}
+                  />
+                  Media
+                </label>
+              </div>
+              <button onClick={fetchPopularItemsReport}>Generate Report</button>
+            </div>
+
+            {isLoading ? (
+              <p className="loading-message">Loading...</p>
+            ) : errorMessage ? (
+              <div className="error-message">{errorMessage}</div>
+            ) : (
+              <>
+                {/* Popular Books Table */}
+                {selectedPopularTables.Books &&
+                  popularItemsData.popularBooks.length > 0 && (
+                    <div className="report-section">
+                      <h3>Top 10 Popular Books</h3>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Borrow Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {popularItemsData.popularBooks.map((book, index) => (
+                            <tr key={index}>
+                              <td>{book.Title}</td>
+                              <td>{book.Author}</td>
+                              <td>{book.BorrowCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                {/* Popular Devices Table */}
+                {selectedPopularTables.Devices &&
+                  popularItemsData.popularDevices.length > 0 && (
+                    <div className="report-section">
+                      <h3>Top 10 Popular Devices</h3>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Brand</th>
+                            <th>Model</th>
+                            <th>Borrow Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {popularItemsData.popularDevices.map((device, index) => (
+                            <tr key={index}>
+                              <td>{device.Title}</td>
+                              <td>{device.Brand}</td>
+                              <td>{device.Model}</td>
+                              <td>{device.BorrowCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                {/* Popular Magazines Table */}
+                {selectedPopularTables.Magazines &&
+                  popularItemsData.popularMagazines.length > 0 && (
+                    <div className="report-section">
+                      <h3>Top 10 Popular Magazines</h3>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Borrow Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {popularItemsData.popularMagazines.map((mag, index) => (
+                            <tr key={index}>
+                              <td>{mag.Title}</td>
+                              <td>{mag.Author}</td>
+                              <td>{mag.BorrowCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                {/* Popular Media Table */}
+                {selectedPopularTables.Media &&
+                  popularItemsData.popularMedia.length > 0 && (
+                    <div className="report-section">
+                      <h3>Top 10 Popular Media Items</h3>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Director</th>
+                            <th>Media Type</th>
+                            <th>Borrow Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {popularItemsData.popularMedia.map((media, index) => (
+                            <tr key={index}>
+                              <td>{media.Title}</td>
+                              <td>{media.Director}</td>
+                              <td>{media.MediaType}</td>
+                              <td>{media.BorrowCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+              </>
+            )}
+          </>
+        )}
 
         {/* Filter Section for User Fines Report */}
         {currentItemType === 'UserFinesReport' && (
-          <div className="filter-section">
-            <h2>Filter User Fines Report</h2>
-            <div className="filter-controls">
-              <div className="form-control">
-                <label>
-                  User ID:
-                  {loadingUsers ? (
-                    <select disabled>
-                      <option>Loading...</option>
-                    </select>
-                  ) : (
-                    <select
-                      name="userIdFilter"
-                      value={userIdFilter}
-                      onChange={handleFilterChange}
-                    >
-                      <option value="">All Users</option>
-                      {usersList.map((user) => (
-                        <option key={user.UserID} value={user.UserID}>
-                          {user.UserID} - {user.FirstName} {user.LastName}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </label>
-              </div>
-              <div className="form-control">
-                <label>
-                  Borrow Date From:
-                  <input
-                    type="date"
-                    name="borrowDateFrom"
-                    value={borrowDateFrom}
-                    onChange={handleFilterChange}
-                  />
-                </label>
-              </div>
-              <div className="form-control">
-                <label>
-                  Borrow Date To:
-                  <input
-                    type="date"
-                    name="borrowDateTo"
-                    value={borrowDateTo}
-                    onChange={handleFilterChange}
-                  />
-                </label>
-              </div>
-              <div className="filter-buttons">
-                <button className="apply-button" onClick={applyFilters}>
-                  Apply Filters
-                </button>
-                <button className="clear-button" onClick={clearFilters}>
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-            {/* Display filtered user info */}
-            {filteredUserInfo && (
-              <div className="user-info">
-                <p>
-                  <strong>User:</strong> {filteredUserInfo.fullName}
-                </p>
-                <p>
-                  <strong>Current Balance:</strong> ${parseFloat(filteredUserInfo.balance).toFixed(2)}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Data Table */}
-        {itemsData.length > 0 ? (
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {itemFields[currentItemType].map((field) => (
-                    <th key={field.key}>{field.label}</th>
-                  ))}
-                  {currentItemType !== 'UserFinesReport' && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {itemsData.map((item, index) => (
-                  <tr key={index}>
-                    {itemFields[currentItemType].map((field) => {
-                      let value = item[field.key];
-
-                      if (field.isDate && value) {
-                        value = new Date(value).toLocaleDateString();
-                      } else if (field.isDateTime && value) {
-                        value = new Date(value).toLocaleString();
-                      } else if (field.isCurrency && value !== null) {
-                        value = `$${parseFloat(value).toFixed(2)}`;
-                      } else if (field.isDuration && value !== null) {
-                        value = `${value} minutes`;
-                      } else if (field.isBoolean) {
-                        value = value ? 'Yes' : 'No';
-                      } else {
-                        value = value !== null && value !== undefined ? value : 'N/A';
-                      }
-
-                      return <td key={field.key}>{value}</td>;
-                    })}
-                    {currentItemType !== 'UserFinesReport' && (
-                      <td>
-                        <button className="edit-button" onClick={() => handleEdit(item)}>
-                          Edit
-                        </button>
-                        <button
-                          className="delete-button"
-                          onClick={() =>
-                            handleDelete(item[itemFields[currentItemType][0].key])
-                          }
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p>No records found.</p>
-        )}
-
-        {/* Form to add or edit items */}
-        {currentItemType !== 'UserFinesReport' && (
           <>
-            <h2>
-              {isEditing ? 'Edit' : 'Add New'} {currentItemType}
-            </h2>
-            <form onSubmit={handleFormSubmit} className="dashboard-form">
-              {itemFields[currentItemType].map((field) => (
-                <div key={field.key} className="form-control">
+            <div className="filter-section">
+              <h2>Filter User Fines Report</h2>
+              <div className="filter-controls">
+                <div className="form-control">
                   <label>
-                    {field.label}:
-                    {field.isBoolean ? (
-                      <input
-                        type="checkbox"
-                        name={field.key}
-                        checked={!!formData[field.key]}
-                        onChange={(e) => handleInputChange(e, field)}
-                        disabled={isEditing && field.readOnly}
-                      />
+                    User ID:
+                    {loadingUsers ? (
+                      <select disabled>
+                        <option>Loading...</option>
+                      </select>
                     ) : (
-                      <input
-                        type={
-                          field.isDate
-                            ? 'date'
-                            : field.isCurrency
-                            ? 'number'
-                            : field.key.toLowerCase().includes('email')
-                            ? 'email'
-                            : 'text'
-                        }
-                        name={field.key}
-                        value={
-                          field.isDate && formData[field.key]
-                            ? formData[field.key]
-                            : formData[field.key] || ''
-                        }
-                        onChange={(e) => handleInputChange(e, field)}
-                        required={!field.isOptional && !field.readOnly}
-                        disabled={isEditing && field.readOnly}
-                      />
+                      <select
+                        name="userIdFilter"
+                        value={userIdFilter}
+                        onChange={handleFilterChange}
+                      >
+                        <option value="">All Users</option>
+                        {usersList.map((user) => (
+                          <option key={user.UserID} value={user.UserID}>
+                            {user.UserID} - {user.FirstName} {user.LastName}
+                          </option>
+                        ))}
+                      </select>
                     )}
                   </label>
                 </div>
-              ))}
-              <div className="form-buttons">
-                <button className="submit-button" type="submit">
-                  {isEditing ? 'Update' : 'Add'}
-                </button>
-                {isEditing && (
-                  <button className="cancel-button" type="button" onClick={handleAddNew}>
-                    Cancel
+                <div className="form-control">
+                  <label>
+                    Borrow Date From:
+                    <input
+                      type="date"
+                      name="borrowDateFrom"
+                      value={borrowDateFrom}
+                      onChange={handleFilterChange}
+                    />
+                  </label>
+                </div>
+                <div className="form-control">
+                  <label>
+                    Borrow Date To:
+                    <input
+                      type="date"
+                      name="borrowDateTo"
+                      value={borrowDateTo}
+                      onChange={handleFilterChange}
+                    />
+                  </label>
+                </div>
+                <div className="filter-buttons">
+                  <button className="apply-button" onClick={applyFilters}>
+                    Apply Filters
                   </button>
-                )}
+                  <button className="clear-button" onClick={clearFilters}>
+                    Clear Filters
+                  </button>
+                </div>
               </div>
-            </form>
+              {/* Display filtered user info */}
+              {filteredUserInfo && (
+                <div className="user-info">
+                  <p>
+                    <strong>User:</strong> {filteredUserInfo.fullName}
+                  </p>
+                  <p>
+                    <strong>Current Balance:</strong> $
+                    {parseFloat(filteredUserInfo.balance).toFixed(2)}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* User Fines Report Data Table */}
+            {Array.isArray(itemsData) && itemsData.length > 0 ? (
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      {itemFields['UserFinesReport'].map((field) => (
+                        <th key={field.key}>{field.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itemsData.map((item, index) => (
+                      <tr key={index}>
+                        {itemFields['UserFinesReport'].map((field) => {
+                          let value = item[field.key];
+
+                          if (field.isCurrency && value !== null) {
+                            value = `$${parseFloat(value).toFixed(2)}`;
+                          } else if (field.isDate && value) {
+                            value = new Date(value).toLocaleDateString();
+                          } else {
+                            value = value !== null && value !== undefined ? value : 'N/A';
+                          }
+
+                          return <td key={field.key}>{value}</td>;
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>No records found.</p>
+            )}
           </>
         )}
+
+        {/* Data Table for Other Item Types */}
+        {currentItemType !== 'AnnualCostReport' &&
+          currentItemType !== 'UserFinesReport' &&
+          currentItemType !== 'PopularItemsReport' &&
+          Array.isArray(itemsData) &&
+          itemsData.length > 0 && (
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    {itemFields[currentItemType].map((field) => (
+                      <th key={field.key}>{field.label}</th>
+                    ))}
+                    {currentItemType !== 'UserFinesReport' && <th>Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemsData.map((item, index) => (
+                    <tr key={index}>
+                      {itemFields[currentItemType].map((field) => {
+                        let value = item[field.key];
+
+                        if (field.isDate && value) {
+                          value = new Date(value).toLocaleDateString();
+                        } else if (field.isDateTime && value) {
+                          value = new Date(value).toLocaleString();
+                        } else if (field.isCurrency && value !== null) {
+                          value = `$${parseFloat(value).toFixed(2)}`;
+                        } else if (field.isDuration && value !== null) {
+                          value = `${value} minutes`;
+                        } else if (field.isBoolean) {
+                          value = value ? 'Yes' : 'No';
+                        } else {
+                          value = value !== null && value !== undefined ? value : 'N/A';
+                        }
+
+                        return <td key={field.key}>{value}</td>;
+                      })}
+                      {currentItemType !== 'UserFinesReport' && (
+                        <td>
+                          <button className="edit-button" onClick={() => handleEdit(item)}>
+                            Edit
+                          </button>
+                          <button
+                            className="delete-button"
+                            onClick={() =>
+                              handleDelete(item[itemFields[currentItemType][0].key])
+                            }
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+        {/* Form to add or edit items */}
+        {currentItemType !== 'UserFinesReport' &&
+          currentItemType !== 'AnnualCostReport' &&
+          currentItemType !== 'PopularItemsReport' && (
+            <>
+              <h2>{isEditing ? 'Edit' : 'Add New'} {currentItemType}</h2>
+              <form onSubmit={handleFormSubmit} className="dashboard-form">
+                {itemFields[currentItemType].map((field) => (
+                  <div key={field.key} className="form-control">
+                    <label>
+                      {field.label}:
+                      {field.isBoolean ? (
+                        <input
+                          type="checkbox"
+                          name={field.key}
+                          checked={!!formData[field.key]}
+                          onChange={(e) => handleInputChange(e, field)}
+                          disabled={isEditing && field.readOnly}
+                        />
+                      ) : (
+                        <input
+                          type={
+                            field.isDate
+                              ? 'date'
+                              : field.isCurrency
+                              ? 'number'
+                              : field.key.toLowerCase().includes('email')
+                              ? 'email'
+                              : 'text'
+                          }
+                          name={field.key}
+                          value={
+                            field.isDate && formData[field.key]
+                              ? formData[field.key]
+                              : formData[field.key] || ''
+                          }
+                          onChange={(e) => handleInputChange(e, field)}
+                          required={!field.isOptional && !field.readOnly}
+                          disabled={isEditing && field.readOnly}
+                        />
+                      )}
+                    </label>
+                  </div>
+                ))}
+                <div className="form-buttons">
+                  <button className="submit-button" type="submit">
+                    {isEditing ? 'Update' : 'Add'}
+                  </button>
+                  {isEditing && (
+                    <button className="cancel-button" type="button" onClick={handleAddNew}>
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </>
+          )}
       </div>
     </div>
   );

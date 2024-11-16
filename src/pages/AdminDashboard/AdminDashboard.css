@@ -1,16 +1,35 @@
 /* Dashboard Container */
 .dashboard-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 20px;
   font-family: Arial, sans-serif;
-  background-color: #f8f9fa;
   min-height: 100vh;
+  background-color: #f0f2f5; /* Background from Simrat-Clair */
 }
 
-/* Dashboard Header */
-.dashboard-content h1 {
-  text-align: center;
-  color: #343a40;
+/* Dashboard Content */
+.dashboard-content {
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 1200px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Heading Styles */
+h1,
+h2,
+h3 {
   margin-bottom: 20px;
+  color: #333333;
+  text-align: center;
+}
+
+.dashboard-content h1 {
+  color: #343a40;
   font-size: 2em;
   font-weight: bold;
 }
@@ -39,25 +58,29 @@
   margin: 10px;
 }
 
-/* Button Group */
+/* Button Group Styles */
 .button-group {
   display: flex;
+  flex-wrap: wrap; /* Added flex-wrap from Simrat-Clair */
   justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 30px; /* Increased margin-bottom from Simrat-Clair */
 }
 
+.button-group button,
 .item-type-button {
   padding: 10px 20px;
   font-size: 1em;
   background-color: #007bff;
   color: #ffffff;
   border: none;
-  border-radius: 5px;
+  border-radius: 5px; /* Unified border-radius */
   cursor: pointer;
   transition: background-color 0.3s;
+  margin: 5px;
 }
 
+.button-group button:hover,
 .item-type-button:hover {
   background-color: #0056b3;
 }
@@ -67,10 +90,11 @@
   cursor: not-allowed;
 }
 
-/* Table Styling */
+/* Table Styles */
 .table-container {
   overflow-x: auto;
   margin-top: 20px;
+  margin-bottom: 40px; /* Combined margins from both branches */
 }
 
 .data-table {
@@ -80,15 +104,17 @@
   margin-bottom: 20px;
 }
 
-.data-table th, .data-table td {
-  padding: 10px;
-  border: 1px solid #dee2e6;
-  text-align: center;
+.data-table th,
+.data-table td {
+  padding: 12px; /* Used padding from Simrat-Clair */
+  border: 1px solid #cccccc; /* Used border from Simrat-Clair */
+  text-align: center; /* Text alignment from main */
 }
 
 .data-table th {
-  background-color: #343a40;
+  background-color: #343a40; /* Background from main */
   color: #ffffff;
+  font-weight: bold;
 }
 
 .data-table tr:nth-child(even) {
@@ -99,20 +125,30 @@
   background-color: #e9ecef;
 }
 
+.data-table td button,
 .data-table td .edit-button,
 .data-table td .delete-button {
-  padding: 5px 10px;
-  font-size: 0.9em;
+  padding: 6px 10px; /* Merged padding */
+  font-size: 12px; /* Merged font size */
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: opacity 0.3s;
+  transition: background-color 0.3s ease, opacity 0.3s;
+  margin-right: 5px;
+}
+
+.data-table td button {
+  background-color: #007bff;
+  color: #ffffff;
+}
+
+.data-table td button:hover {
+  background-color: #0056b3;
 }
 
 .data-table td .edit-button {
   background-color: #ffc107;
   color: #ffffff;
-  margin-right: 5px;
 }
 
 .data-table td .edit-button:hover {
@@ -185,9 +221,11 @@
 .form-buttons {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  margin-top: 20px;
+  gap: 10px; /* Added gap for consistent spacing */
 }
 
+.form-buttons button,
 .submit-button,
 .cancel-button {
   padding: 12px 20px;
@@ -200,6 +238,7 @@
   transition: background-color 0.3s;
 }
 
+.form-buttons button:hover,
 .submit-button:hover {
   background-color: #0056b3;
 }
@@ -250,7 +289,59 @@
   border-radius: 5px;
 }
 
-/* Responsive Design */
+/* Report Filters Enhancements */
+.report-filters {
+  display: flex;
+  flex-direction: column; /* Changed to column for better responsiveness */
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.report-filters label {
+  margin: 5px 10px;
+  font-weight: bold;
+  color: #333333;
+}
+
+.category-filters,
+.popular-category-filters {
+  display: flex;
+  flex-wrap: wrap; /* Added flex-wrap for responsiveness */
+  gap: 15px;
+  margin: 10px 0;
+}
+
+.category-filters label,
+.popular-category-filters label {
+  font-weight: normal;
+  color: #555555;
+}
+
+/* Report Summary Enhancements */
+.report-summary {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.report-summary p {
+  margin: 10px;
+  padding: 15px 20px;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333333;
+}
+
+/* Adjustments for Total Spending Report Table */
+.data-table th {
+  background-color: #e9ecef; /* Slightly different background for report tables */
+}
+
+/* Responsive Styles */
 @media (max-width: 768px) {
   .dashboard-content {
     padding: 20px;
@@ -261,12 +352,38 @@
   }
 
   .form-buttons button,
-  .filter-buttons button {
+  .filter-buttons button,
+  .button-group button {
     width: 100%;
     margin: 5px 0;
   }
 
-  .data-table th, .data-table td {
+  .data-table th,
+  .data-table td {
     padding: 10px;
+  }
+
+  .report-filters,
+  .category-filters,
+  .popular-category-filters {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .report-filters label,
+  .report-filters input,
+  .report-filters button,
+  .category-filters label,
+  .popular-category-filters label {
+    margin: 5px 0;
+  }
+
+  .report-summary {
+    font-size: 16px;
+  }
+
+  .report-summary p {
+    width: 80%;
+    text-align: center;
   }
 }
