@@ -1,15 +1,15 @@
 /* NotificationBell.css */
 .notification-bell {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: .50rem;
+    right: 27rem;
     cursor: pointer;
-    font-size: 2rem;
+    font-size: 1.5rem;
     float: right;
   }
   
   .bell-icon {
-    color: #333;
+    color: #ffffff;
   }
   
   .notification-bell.new .bell-icon {
@@ -20,7 +20,7 @@
     position: absolute;
     top: -5px;
     right: -5px;
-    background-color: red;
+    background-color: rgb(255, 255, 255);
     color: white;
     border-radius: 50%;
     padding: 5px;
