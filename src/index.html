@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Library Admin Interface</h1>
+        
+        <!-- Section for Managing Items -->
+        <section id="item-management">
+            <h2>Manage Items</h2>
+            <form id="item-form">
+                <input type="text" id="item-title" placeholder="Title" required>
+                <input type="text" id="item-type" placeholder="Type (book/media/device)" required>
+                <input type="number" id="item-copies" placeholder="Number of Copies" required>
+                <button type="button" onclick="addItem()">Add Item</button>
+            </form>
+            <ul id="item-list"></ul>
+        </section>
+
+        <!-- Section for Managing Users -->
+        <section id="user-management">
+            <h2>Manage Users</h2>
+            <form id="user-form">
+                <input type="text" id="user-name" placeholder="User Name" required>
+                <input type="number" id="borrowing-limit" placeholder="Borrowing Limit" required>
+                <button type="button" onclick="addUser()">Add User</button>
+            </form>
+            <ul id="user-list"></ul>
+        </section>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
