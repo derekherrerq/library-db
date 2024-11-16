@@ -5,10 +5,12 @@ import { AuthContext } from '../Authentication/AuthContext';
 import NotificationBell from './NotificationBell/NotificationBell'; // Import NotificationBell
 import './Navbar.css';
 
-function ActiveListItem(props) {
+function ActiveListItem({ url, name }) {
   return (
-    <LinkContainer to={props.url}>
-      <Nav.Link active={false}>{props.name}</Nav.Link>
+    <LinkContainer to={url}>
+      <Nav.Link active={false} className="nav-link-custom">
+        {name}
+      </Nav.Link>
     </LinkContainer>
   );
 }
@@ -60,3 +62,4 @@ const NavBar = () => {
 };
 
 export default NavBar;
+
