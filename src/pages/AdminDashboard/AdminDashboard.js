@@ -95,9 +95,6 @@ const itemFields = {
     { label: 'User ID', key: 'UserID' },
     { label: 'First Name', key: 'FirstName' },
     { label: 'Last Name', key: 'LastName' },
-    { label: 'Email', key: 'Email' },
-    { label: 'Phone Number', key: 'PhoneNumber' },
-    { label: 'User Balance', key: 'UserBalance', isCurrency: true },
     { label: 'Borrow Record ID', key: 'BorrowRecordID' },
     { label: 'Borrow Date', key: 'BorrowDate', isDate: true },
     { label: 'Due Date', key: 'DueDate', isDate: true },
@@ -151,7 +148,7 @@ const AdminDashboard = () => {
     Users: 'User',
     Employee: 'Employee',
   };
-  
+
   // Fetch Functions
   const fetchItems = useCallback(
     async (table) => {
@@ -200,17 +197,22 @@ const AdminDashboard = () => {
         }
         const data = await response.json();
         console.log(`Fetched data for ${table}:`, data);
-        setItemsData(data);
 
-        // If UserFinesReport and data exists, set filtered user info
-        if (table === 'UserFinesReport' && data.length > 0) {
-          const user = data[0]; // Assuming all records are for the same user when filtered
-          setFilteredUserInfo({
-            fullName: `${user.FirstName} ${user.LastName}`,
-            balance: user.UserBalance,
-          });
-        } else if (table === 'UserFinesReport') {
-          setFilteredUserInfo(null);
+        if (table === 'UserFinesReport') {
+          // Set itemsData to reportRows and setFilteredUserInfo
+          setItemsData(data.reportRows || []);
+          if (data.userInfo) {
+            setFilteredUserInfo({
+              fullName: `${data.userInfo.FirstName} ${data.userInfo.LastName}`,
+              email: data.userInfo.Email,
+              phoneNumber: data.userInfo.PhoneNumber,
+              balance: data.userInfo.UserBalance,
+            });
+          } else {
+            setFilteredUserInfo(null);
+          }
+        } else {
+          setItemsData(data);
         }
       } catch (error) {
         console.error(`Error in fetchItems for ${table}:`, error);
@@ -915,6 +917,12 @@ const AdminDashboard = () => {
                     <strong>User:</strong> {filteredUserInfo.fullName}
                   </p>
                   <p>
+                    <strong>Email:</strong> {filteredUserInfo.email}
+                  </p>
+                  <p>
+                    <strong>Phone Number:</strong> {filteredUserInfo.phoneNumber}
+                  </p>
+                  <p>
                     <strong>Current Balance:</strong> $
                     {parseFloat(filteredUserInfo.balance).toFixed(2)}
                   </p>
@@ -923,7 +931,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* User Fines Report Data Table */}
-            {Array.isArray(itemsData) && itemsData.length > 0 ? (
+            {itemsData.length > 0 ? (
               <div className="table-container">
                 <table className="data-table">
                   <thead>
@@ -1025,7 +1033,9 @@ const AdminDashboard = () => {
           currentItemType !== 'AnnualCostReport' &&
           currentItemType !== 'PopularItemsReport' && (
             <>
-              <h2>{isEditing ? 'Edit' : 'Add New'} {displayNames[currentItemType]}</h2>
+              <h2>
+                {isEditing ? 'Edit' : 'Add New'} {displayNames[currentItemType]}
+              </h2>
               <form onSubmit={handleFormSubmit} className="dashboard-form">
                 {itemFields[currentItemType].map((field) => (
                   <div key={field.key} className="form-control">
