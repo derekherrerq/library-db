@@ -22,7 +22,7 @@ function NotificationBell() {
     };
   
     fetchNotifications();
-    const intervalId = setInterval(fetchNotifications, 1000); // Poll every minute
+    const intervalId = setInterval(fetchNotifications, 5000); // Poll every minute
   
     return () => clearInterval(intervalId);
   }, []);
