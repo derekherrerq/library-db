@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import './Register.css';
 
 const states = [
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 ];
 
 function Register() {
@@ -22,6 +26,7 @@ function Register() {
     zipCode: '',
     birthday: ''
   });
+
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -53,6 +58,10 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Clear previous messages
+    setErrorMessage('');
+    setSuccessMessage('');
+
     // Validate phone number, birthday, and zip code
     if (!validatePhoneNumber(formData.phoneNumber)) {
       setErrorMessage('Phone number must be in the format 123-456-7891');
@@ -78,13 +87,33 @@ function Register() {
 
       if (response.ok && data.success) {
         setSuccessMessage('Registration successful! You can now log in.');
-        setTimeout(() => navigate('/login'), 2000); // Redirect to login after 2 seconds
+        setErrorMessage(''); // Ensure errorMessage is cleared
+
+        // Optionally, clear the form fields
+        setFormData({
+          username: '',
+          password: '',
+          firstName: '',
+          lastName: '',
+          email: '',
+          phoneNumber: '',
+          streetAddress: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          birthday: ''
+        });
+
+        // Redirect to login after 2 seconds
+        setTimeout(() => navigate('/login'), 2000);
       } else {
         setErrorMessage(data.message || 'Registration failed');
+        setSuccessMessage(''); // Ensure successMessage is cleared
       }
     } catch (error) {
       console.error('Registration error:', error);
       setErrorMessage('An error occurred during registration.');
+      setSuccessMessage(''); // Ensure successMessage is cleared
     }
   };
 
@@ -94,7 +123,7 @@ function Register() {
         <h2>Register</h2>
         {errorMessage && <p className="error-msg">{errorMessage}</p>}
         {successMessage && <p className="success-msg">{successMessage}</p>}
-        
+
         <div className="form-control">
           <label>Username:</label>
           <input
@@ -105,6 +134,7 @@ function Register() {
             required
           />
         </div>
+
         <div className="form-control">
           <label>Password:</label>
           <input
@@ -115,6 +145,7 @@ function Register() {
             required
           />
         </div>
+
         <div className="form-control">
           <label>First Name:</label>
           <input
@@ -125,6 +156,7 @@ function Register() {
             required
           />
         </div>
+
         <div className="form-control">
           <label>Last Name:</label>
           <input
@@ -135,6 +167,7 @@ function Register() {
             required
           />
         </div>
+
         <div className="form-control">
           <label>Email:</label>
           <input
@@ -145,6 +178,7 @@ function Register() {
             required
           />
         </div>
+
         <div className="form-control">
           <label>Phone Number:</label>
           <input
@@ -153,10 +187,11 @@ function Register() {
             value={formData.phoneNumber}
             onChange={handleChange}
             placeholder="123-456-7891"
-            maxLength="12" // Limits the input length to "123-456-7891"
+            maxLength="12"
             required
           />
         </div>
+
         <div className="form-control">
           <label>Street Address:</label>
           <input
@@ -167,6 +202,7 @@ function Register() {
             required
           />
         </div>
+
         <div className="form-control">
           <label>City:</label>
           <input
@@ -177,6 +213,7 @@ function Register() {
             required
           />
         </div>
+
         <div className="form-control">
           <label>State:</label>
           <select
@@ -193,6 +230,7 @@ function Register() {
             ))}
           </select>
         </div>
+
         <div className="form-control">
           <label>Zip Code:</label>
           <input
@@ -200,10 +238,11 @@ function Register() {
             name="zipCode"
             value={formData.zipCode}
             onChange={handleChange}
-            maxLength="5" // Limits input length to 5 characters
+            maxLength="5"
             required
           />
         </div>
+
         <div className="form-control">
           <label>Birthday (YYYY-MM-DD):</label>
           <input
@@ -212,7 +251,7 @@ function Register() {
             value={formData.birthday}
             onChange={handleChange}
             placeholder="YYYY-MM-DD"
-            maxLength="10" // Limits the input length to "YYYY-MM-DD"
+            maxLength="10"
             required
           />
         </div>
