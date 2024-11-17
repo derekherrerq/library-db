@@ -95,9 +95,6 @@ const itemFields = {
     { label: 'User ID', key: 'UserID' },
     { label: 'First Name', key: 'FirstName' },
     { label: 'Last Name', key: 'LastName' },
-    { label: 'Email', key: 'Email' },
-    { label: 'Phone Number', key: 'PhoneNumber' },
-    { label: 'User Balance', key: 'UserBalance', isCurrency: true },
     { label: 'Borrow Record ID', key: 'BorrowRecordID' },
     { label: 'Borrow Date', key: 'BorrowDate', isDate: true },
     { label: 'Due Date', key: 'DueDate', isDate: true },
@@ -138,11 +135,19 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [userIdFilter, setUserIdFilter] = useState('');
-  const [borrowDateFrom, setBorrowDateFrom] = useState('');
-  const [borrowDateTo, setBorrowDateTo] = useState('');
   const [filteredUserInfo, setFilteredUserInfo] = useState(null);
   const [usersList, setUsersList] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const displayNames = {
+    BorrowRecord: 'Borrow Record',
+    ItemBook: 'Book',
+    ItemDevices: 'Device',
+    ItemMagazine: 'Magazine',
+    ItemMedia: 'Media',
+    Users: 'User',
+    Employee: 'Employee',
+  };
 
   // Fetch Functions
   const fetchItems = useCallback(
@@ -153,17 +158,16 @@ const AdminDashboard = () => {
         let url = '';
 
         if (table === 'UserFinesReport') {
-          // Append query parameters if filters are applied
+          // Ensure that UserID is provided
+          const userID = userIdFilter;
+          if (!userID) {
+            alert('No user selected.');
+            console.log('UserFinesReport: No UserID provided. Skipping fetch.');
+            setItemsData([]);
+            return;
+          }
           const params = new URLSearchParams();
-          if (userIdFilter.trim() !== '') {
-            params.append('UserID', userIdFilter.trim());
-          }
-          if (borrowDateFrom !== '') {
-            params.append('BorrowDateFrom', borrowDateFrom);
-          }
-          if (borrowDateTo !== '') {
-            params.append('BorrowDateTo', borrowDateTo);
-          }
+          params.append('UserID', userID);
           url = `/api/userFinesReport?${params.toString()}`;
         } else if (table === 'AnnualCostReport') {
           // Check if at least one category is selected
@@ -193,31 +197,29 @@ const AdminDashboard = () => {
         }
         const data = await response.json();
         console.log(`Fetched data for ${table}:`, data);
-        setItemsData(data);
 
-        // If UserFinesReport and data exists, set filtered user info
-        if (table === 'UserFinesReport' && data.length > 0) {
-          const user = data[0]; // Assuming all records are for the same user when filtered
-          setFilteredUserInfo({
-            fullName: `${user.FirstName} ${user.LastName}`,
-            balance: user.UserBalance,
-          });
-        } else if (table === 'UserFinesReport') {
-          setFilteredUserInfo(null);
+        if (table === 'UserFinesReport') {
+          // Set itemsData to reportRows and setFilteredUserInfo
+          setItemsData(data.reportRows || []);
+          if (data.userInfo) {
+            setFilteredUserInfo({
+              fullName: `${data.userInfo.FirstName} ${data.userInfo.LastName}`,
+              email: data.userInfo.Email,
+              phoneNumber: data.userInfo.PhoneNumber,
+              balance: data.userInfo.UserBalance,
+            });
+          } else {
+            setFilteredUserInfo(null);
+          }
+        } else {
+          setItemsData(data);
         }
       } catch (error) {
         console.error(`Error in fetchItems for ${table}:`, error);
         alert(error.message);
       }
     },
-    [
-      reportStartDate,
-      reportEndDate,
-      selectedCategories,
-      userIdFilter,
-      borrowDateFrom,
-      borrowDateTo,
-    ]
+    [reportStartDate, reportEndDate, selectedCategories, userIdFilter]
   );
 
   const fetchPopularItemsReport = useCallback(async () => {
@@ -263,6 +265,9 @@ const AdminDashboard = () => {
       }
       const users = await response.json();
       setUsersList(users);
+      if (users.length > 0 && !userIdFilter) {
+        setUserIdFilter(users[0].UserID);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
       alert(error.message);
@@ -273,10 +278,19 @@ const AdminDashboard = () => {
 
   // Effect to fetch data when currentItemType changes
   useEffect(() => {
-    if (currentItemType !== 'PopularItemsReport') {
+    if (currentItemType !== 'PopularItemsReport' && currentItemType !== 'UserFinesReport') {
       fetchItems(currentItemType);
+    } else if (currentItemType === 'UserFinesReport') {
+      fetchUsers();
     }
   }, [currentItemType, fetchItems]);
+
+  // Effect to fetch UserFinesReport data when userIdFilter changes
+  useEffect(() => {
+    if (currentItemType === 'UserFinesReport' && userIdFilter) {
+      fetchItems('UserFinesReport');
+    }
+  }, [userIdFilter, currentItemType, fetchItems]);
 
   // Handler for changing the report type
   const handleItemTypeChange = (itemType) => {
@@ -288,8 +302,6 @@ const AdminDashboard = () => {
 
     // Reset filters
     setUserIdFilter('');
-    setBorrowDateFrom('');
-    setBorrowDateTo('');
     setFilteredUserInfo(null);
 
     if (itemType === 'PopularItemsReport') {
@@ -321,28 +333,10 @@ const AdminDashboard = () => {
     console.log(`Form data updated: ${name} = ${newValue}`);
   };
 
-  // Handlers for filter inputs
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'userIdFilter') {
-      setUserIdFilter(value);
-    } else if (name === 'borrowDateFrom') {
-      setBorrowDateFrom(value);
-    } else if (name === 'borrowDateTo') {
-      setBorrowDateTo(value);
-    }
-  };
-
-  const applyFilters = () => {
-    fetchItems('UserFinesReport');
-  };
-
-  const clearFilters = () => {
-    setUserIdFilter('');
-    setBorrowDateFrom('');
-    setBorrowDateTo('');
-    setFilteredUserInfo(null);
-    fetchItems('UserFinesReport');
+  // Handler for user selection change
+  const handleUserChange = (e) => {
+    const { value } = e.target;
+    setUserIdFilter(value);
   };
 
   const handleAddNew = () => {
@@ -887,15 +881,15 @@ const AdminDashboard = () => {
           </>
         )}
 
-        {/* Filter Section for User Fines Report */}
+        {/* User Fines Report UI */}
         {currentItemType === 'UserFinesReport' && (
           <>
             <div className="filter-section">
-              <h2>Filter User Fines Report</h2>
+              <h2>Select User for Fines Report</h2>
               <div className="filter-controls">
                 <div className="form-control">
                   <label>
-                    User ID:
+                    User:
                     {loadingUsers ? (
                       <select disabled>
                         <option>Loading...</option>
@@ -904,9 +898,8 @@ const AdminDashboard = () => {
                       <select
                         name="userIdFilter"
                         value={userIdFilter}
-                        onChange={handleFilterChange}
+                        onChange={handleUserChange}
                       >
-                        <option value="">All Users</option>
                         {usersList.map((user) => (
                           <option key={user.UserID} value={user.UserID}>
                             {user.UserID} - {user.FirstName} {user.LastName}
@@ -916,42 +909,18 @@ const AdminDashboard = () => {
                     )}
                   </label>
                 </div>
-                <div className="form-control">
-                  <label>
-                    Borrow Date From:
-                    <input
-                      type="date"
-                      name="borrowDateFrom"
-                      value={borrowDateFrom}
-                      onChange={handleFilterChange}
-                    />
-                  </label>
-                </div>
-                <div className="form-control">
-                  <label>
-                    Borrow Date To:
-                    <input
-                      type="date"
-                      name="borrowDateTo"
-                      value={borrowDateTo}
-                      onChange={handleFilterChange}
-                    />
-                  </label>
-                </div>
-                <div className="filter-buttons">
-                  <button className="apply-button" onClick={applyFilters}>
-                    Apply Filters
-                  </button>
-                  <button className="clear-button" onClick={clearFilters}>
-                    Clear Filters
-                  </button>
-                </div>
               </div>
               {/* Display filtered user info */}
               {filteredUserInfo && (
                 <div className="user-info">
                   <p>
                     <strong>User:</strong> {filteredUserInfo.fullName}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {filteredUserInfo.email}
+                  </p>
+                  <p>
+                    <strong>Phone Number:</strong> {filteredUserInfo.phoneNumber}
                   </p>
                   <p>
                     <strong>Current Balance:</strong> $
@@ -962,7 +931,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* User Fines Report Data Table */}
-            {Array.isArray(itemsData) && itemsData.length > 0 ? (
+            {itemsData.length > 0 ? (
               <div className="table-container">
                 <table className="data-table">
                   <thead>
@@ -1064,7 +1033,9 @@ const AdminDashboard = () => {
           currentItemType !== 'AnnualCostReport' &&
           currentItemType !== 'PopularItemsReport' && (
             <>
-              <h2>{isEditing ? 'Edit' : 'Add New'} {currentItemType}</h2>
+              <h2>
+                {isEditing ? 'Edit' : 'Add New'} {displayNames[currentItemType]}
+              </h2>
               <form onSubmit={handleFormSubmit} className="dashboard-form">
                 {itemFields[currentItemType].map((field) => (
                   <div key={field.key} className="form-control">

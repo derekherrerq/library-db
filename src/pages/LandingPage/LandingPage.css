@@ -1,0 +1,125 @@
+/* Isolated Styling for Landing Page */
+.landing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+              url('/src/Images/coug1.jpg') right center / cover no-repeat;
+
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Navbar Styling for Landing Page */
+.landing-navbar {
+  background: rgba(0, 0, 0, 0.5);
+  position: absolute;
+  top: 0;
+  width: 100%;
+  padding: 10px 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+/* Central Content Styling */
+.landing-content {
+  z-index: 2;
+  position: relative;
+  padding: 20px;
+  margin: 0;
+}
+
+/* Slideshow Container */
+.slideshow-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.slideshow-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  animation: fade 12s infinite;
+}
+
+/* Animations for slideshow */
+@keyframes fade {
+  0%, 33% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* General Styling for Landing Page */
+.landing-title {
+  font-size: 3em;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.landing-subtitle {
+  font-size: 1.5em;
+  margin-bottom: 2rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #f0f0f0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Button Styling */
+.landing-button {
+  padding: 12px 24px;
+  font-size: 1em;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  border: none;
+  border-radius: 50px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.landing-button:hover {
+  background: linear-gradient(135deg, #0056b3, #004094);
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Footer Styling */
+.landing-footer {
+  margin-top: auto;
+  padding: 10px;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .landing-title {
+    font-size: 2.5em;
+    margin-bottom: 1rem;
+  }
+
+  .landing-subtitle {
+    font-size: 1.2em;
+    margin-bottom: 1.5rem;
+  }
+
+  .landing-button {
+    font-size: 0.9em;
+    padding: 10px 20px;
+  }
+}
+
+

@@ -14,7 +14,7 @@ const pool = mysql.createPool({
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      const { action, UserID, BorrowDateFrom, BorrowDateTo } = req.query;
+      const { action, UserID } = req.query;
 
       if (action === 'getUsers') {
         // Fetch the list of users
@@ -28,15 +28,39 @@ export default async function handler(req, res) {
         return;
       }
 
-      // Proceed to fetch the User Fines Report
+      // Initialize variables for userInfo and reportData
+      let userInfo = null;
+      let reportRows = [];
+
+      // Fetch user information if UserID is provided
+      if (UserID) {
+        const [userInfoRows] = await pool.query(
+          `
+          SELECT UserID, FirstName, LastName, Email, PhoneNumber, Balance AS UserBalance
+          FROM Users
+          WHERE UserID = ? AND IsDeleted = 0
+        `,
+          [UserID]
+        );
+        if (userInfoRows.length > 0) {
+          userInfo = userInfoRows[0];
+        } else {
+          // If the user is not found, return an empty report
+          res.status(200).json({ userInfo: null, reportRows: [] });
+          return;
+        }
+      } else {
+        // If UserID is not provided, return an empty report
+        res.status(200).json({ userInfo: null, reportRows: [] });
+        return;
+      }
+
+      // Proceed to fetch the User Fines Report without sensitive fields
       let query = `
         SELECT
           u.UserID,
           u.FirstName,
           u.LastName,
-          u.Email,
-          u.PhoneNumber,
-          u.Balance AS UserBalance,
           br.BorrowRecordID,
           br.BorrowDate,
           br.DueDate,
@@ -58,31 +82,29 @@ export default async function handler(req, res) {
         LEFT JOIN ItemMedia im ON br.MediaID = im.MediaID AND im.IsDeleted = 0
         LEFT JOIN ItemMagazine ima ON br.MagID = ima.MagazineID AND ima.IsDeleted = 0
         WHERE
-          (u.Balance > 0 OR br.FineAmount > 0) AND u.IsDeleted = 0
+          u.IsDeleted = 0
+          AND u.UserID = ?
       `;
 
-      const params = [];
+      const params = [UserID];
 
-      if (UserID) {
-        query += ' AND u.UserID = ?';
-        params.push(UserID);
-      }
+      // Remove the restrictive condition
+      // query += `
+      //   AND (
+      //     u.Balance > 0 OR
+      //     (br.FineAmount IS NOT NULL AND br.FineAmount > 0)
+      //   )
+      // `;
 
-      if (BorrowDateFrom) {
-        query += ' AND br.BorrowDate >= ?';
-        params.push(BorrowDateFrom);
-      }
-
-      if (BorrowDateTo) {
-        query += ' AND br.BorrowDate <= ?';
-        params.push(BorrowDateTo);
-      }
-
-      query += ' ORDER BY u.UserID, br.BorrowDate DESC;';
+      query += ' ORDER BY br.BorrowDate DESC;';
 
       const [rows] = await pool.query(query, params);
 
-      res.status(200).json(rows);
+      // Assign reportRows for the response
+      reportRows = rows;
+
+      // Send both userInfo and reportRows to the frontend
+      res.status(200).json({ userInfo, reportRows });
     } catch (error) {
       console.error('Error in userFinesReport:', error);
       res.status(500).json({ error: 'Failed to fetch data' });

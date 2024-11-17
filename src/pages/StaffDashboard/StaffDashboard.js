@@ -81,6 +81,16 @@ const StaffDashboard = () => {
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
 
+  const displayNames = {
+    BorrowRecord: 'Borrow Record',
+    ItemBook: 'Book',
+    ItemDevices: 'Device',
+    ItemMagazine: 'Magazine',
+    ItemMedia: 'Media',
+    Users: 'User',
+    Employee: 'Employee',
+  };
+  
   const fetchItems = async (table) => {
     try {
       const response = await fetch(`/api/pullAPI?table=${table}`);
@@ -303,9 +313,7 @@ const StaffDashboard = () => {
         )}
 
         {/* Form to add or edit items */}
-        <h2>
-          {isEditing ? 'Edit' : 'Add New'} {currentItemType}
-        </h2>
+        <h2>{isEditing ? 'Edit' : 'Add New'} {displayNames[currentItemType]}</h2>
         <form onSubmit={handleFormSubmit} className="dashboard-form">
           {itemFields[currentItemType].map((field) => (
             <div key={field.key} className="form-control">
