@@ -6,7 +6,7 @@
   padding: 20px;
   font-family: Arial, sans-serif;
   min-height: 100vh;
-  background-color: #f0f2f5; /* Background from Simrat-Clair */
+  background-color: #f0f2f5;
 }
 
 /* Dashboard Content */
@@ -61,10 +61,10 @@ h3 {
 /* Button Group Styles */
 .button-group {
   display: flex;
-  flex-wrap: wrap; /* Added flex-wrap from Simrat-Clair */
+  flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 30px; /* Increased margin-bottom from Simrat-Clair */
+  margin-bottom: 30px;
 }
 
 .button-group button,
@@ -94,7 +94,7 @@ h3 {
 .table-container {
   overflow-x: auto;
   margin-top: 20px;
-  margin-bottom: 40px; /* Combined margins from both branches */
+  margin-bottom: 40px;
 }
 
 .data-table {
@@ -106,13 +106,13 @@ h3 {
 
 .data-table th,
 .data-table td {
-  padding: 12px; /* Used padding from Simrat-Clair */
-  border: 1px solid #cccccc; /* Used border from Simrat-Clair */
-  text-align: center; /* Text alignment from main */
+  padding: 12px;
+  border: 1px solid #cccccc;
+  text-align: center;
 }
 
 .data-table th {
-  background-color: #343a40; /* Background from main */
+  background-color: #343a40;
   color: #ffffff;
   font-weight: bold;
 }
@@ -128,8 +128,8 @@ h3 {
 .data-table td button,
 .data-table td .edit-button,
 .data-table td .delete-button {
-  padding: 6px 10px; /* Merged padding */
-  font-size: 12px; /* Merged font size */
+  padding: 6px 10px;
+  font-size: 12px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -222,7 +222,7 @@ h3 {
   display: flex;
   justify-content: center;
   margin-top: 20px;
-  gap: 10px; /* Added gap for consistent spacing */
+  gap: 10px;
 }
 
 .form-buttons button,
