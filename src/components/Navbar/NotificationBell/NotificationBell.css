@@ -1,0 +1,31 @@
+/* NotificationBell.css */
+.notification-bell {
+    position: absolute;
+    top: .5rem;
+    right: 7rem;
+    cursor: pointer;
+    font-size: 1.5rem;
+    float: right;
+  }
+  
+  .bell-icon {
+    color: #ffffff;
+  }
+  
+  .notification-bell.new .bell-icon {
+    color: red; /* Change color when there's a new notification */
+  }
+  
+  .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: rgb(255, 255, 255);
+    color: white;
+    border-radius: 50%;
+    padding: 5px;
+    font-size: 0.8rem;
+    display: inline-block;
+  }
+  
+  
