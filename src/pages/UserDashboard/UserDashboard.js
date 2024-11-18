@@ -324,18 +324,18 @@ const UserDashboard = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // 'x-user-id': userID, // Remove if backend does not require it
+          // 'x-user-id': userID, // Removed to prevent conflicts
         },
         body: JSON.stringify({
           paymentAmount: parseFloat(paymentAmount),
-          // paymentInfo, // Remove if backend does not require it
+          // paymentInfo, // Uncomment if backend requires payment info
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setPopupMessage('Payment successful! Your account has been reactivated.');
+        setPopupMessage('Payment successful! Your fines have been updated.');
         setShowPopupMessage(true);
         setPaymentPopup(false);
         setPaymentAmount('');
@@ -380,10 +380,22 @@ const UserDashboard = () => {
           )}
         </div>
 
+        {/* Pay Fine Button */}
+        {balance > 0 && !suspended && (
+          <div className="action-button-container">
+            <button className="pay-fine-button" onClick={() => setPaymentPopup(true)}>
+              Pay Fine
+            </button>
+          </div>
+        )}
+
+        {/* Suspended Status and Reactivate Account Button */}
         {suspended && (
           <div className="suspended-status">
             <p className="suspended-text">Your account is <strong>Suspended</strong>.</p>
-            <button onClick={() => setPaymentPopup(true)}>Reactivate Account</button>
+            <button className="reactivate-button" onClick={() => setPaymentPopup(true)}>
+              Reactivate Account
+            </button>
           </div>
         )}
 
@@ -391,7 +403,7 @@ const UserDashboard = () => {
         {paymentPopup && (
           <div className="payment-popup" onClick={handlePopupClick}>
             <div className="popup-content">
-              <h2>Make a Payment</h2>
+              <h2>{suspended ? 'Reactivate Account' : 'Make a Payment'}</h2>
               <label>
                 Card Number:
                 <input
@@ -417,7 +429,7 @@ const UserDashboard = () => {
               <label>
                 CVV:
                 <input
-                  type="text"
+                  type="password" // Changed to password for security
                   value={paymentInfo.cvv}
                   onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value })}
                   placeholder="3 or 4-digit CVV"
