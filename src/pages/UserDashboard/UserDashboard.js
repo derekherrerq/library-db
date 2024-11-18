@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import './UserDashboard.css';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../components/Authentication/AuthContext'; // Adjust the path as needed
+import { AuthContext } from '../../components/Authentication/AuthContext';
 
 const itemFields = {
   ItemBook: [
@@ -45,11 +45,14 @@ const UserDashboard = () => {
   const [itemsData, setItemsData] = useState([]);
   const [currentItemType, setCurrentItemType] = useState('ItemBook');
   const [balance, setBalance] = useState(null);
-  const [suspended, setSuspended] = useState(false); // New state for suspension
+  const [suspended, setSuspended] = useState(false); // State for suspension
   const [viewBorrowedItems, setViewBorrowedItems] = useState(false); // false, 'active', or 'history'
   const [borrowedItems, setBorrowedItems] = useState([]);
   const [borrowLimit, setBorrowLimit] = useState(null);
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
+
+  // New state for borrow limit reached
+  const [borrowLimitReached, setBorrowLimitReached] = useState(false);
 
   // New state for payment popup and messages
   const [paymentPopup, setPaymentPopup] = useState(false);
@@ -57,6 +60,7 @@ const UserDashboard = () => {
   const [paymentInfo, setPaymentInfo] = useState({ cardNumber: '', expiryDate: '', cvv: '' });
   const [paymentErrors, setPaymentErrors] = useState({});
   const [popupMessage, setPopupMessage] = useState('');
+  const [messageType, setMessageType] = useState('success'); // 'success' or 'error'
   const [showPopupMessage, setShowPopupMessage] = useState(false);
 
   // Fetch user information
@@ -84,13 +88,22 @@ const UserDashboard = () => {
         setSuspended(data.suspended);
         setBorrowLimit(data.borrowLimit);
         setActiveBorrowCount(data.activeBorrowCount);
+
+        // Check if borrow limit is reached
+        if (data.activeBorrowCount >= data.borrowLimit) {
+          setBorrowLimitReached(true);
+        } else {
+          setBorrowLimitReached(false);
+        }
       } else {
         setPopupMessage(data.message || 'Failed to fetch user info');
+        setMessageType('error');
         setShowPopupMessage(true);
       }
     } catch (error) {
       console.error('Error fetching user info:', error);
       setPopupMessage('An error occurred while fetching user info');
+      setMessageType('error');
       setShowPopupMessage(true);
     }
   };
@@ -128,18 +141,21 @@ const UserDashboard = () => {
     setViewBorrowedItems(false);
     setPopupMessage('');
     setShowPopupMessage(false);
+    setMessageType('success');
   };
 
   // Borrow an item
   const borrowItem = async (item) => {
     if (suspended) {
       setPopupMessage('Your account is suspended. Please resolve outstanding fines to borrow items.');
+      setMessageType('error');
       setShowPopupMessage(true);
       return;
     }
 
     if (borrowLimit !== null && activeBorrowCount >= borrowLimit) {
-      setPopupMessage(`You have reached your borrow limit of ${borrowLimit} items.`);
+      setPopupMessage(`You have reached your borrow limit of ${borrowLimit} items. Please return some items to borrow more.`);
+      setMessageType('error');
       setShowPopupMessage(true);
       return;
     }
@@ -174,18 +190,27 @@ const UserDashboard = () => {
 
       if (response.ok) {
         setPopupMessage('Item borrowed successfully!');
+        setMessageType('success');
         setShowPopupMessage(true);
         setActiveBorrowCount((prevCount) => prevCount + 1);
+
+        // Check if borrow limit is reached after borrowing
+        if (activeBorrowCount + 1 >= borrowLimit) {
+          setBorrowLimitReached(true);
+        }
+
         fetchItems(currentItemType);
         fetchBorrowedItems(viewBorrowedItems);
         fetchUserInfo();
       } else {
         setPopupMessage(result.message || 'Failed to borrow item');
+        setMessageType('error');
         setShowPopupMessage(true);
       }
     } catch (error) {
       console.error('Error borrowing item:', error);
       setPopupMessage('An error occurred while borrowing the item');
+      setMessageType('error');
       setShowPopupMessage(true);
     }
   };
@@ -212,17 +237,26 @@ const UserDashboard = () => {
 
       if (response.ok) {
         setPopupMessage('Item returned successfully!');
+        setMessageType('success');
         setShowPopupMessage(true);
         setActiveBorrowCount((prevCount) => Math.max(prevCount - 1, 0));
+
+        // Check if borrow limit is no longer reached after returning
+        if (activeBorrowCount - 1 < borrowLimit) {
+          setBorrowLimitReached(false);
+        }
+
         fetchBorrowedItems(viewBorrowedItems);
         fetchUserInfo();
       } else {
         setPopupMessage(result.message || 'Failed to return item');
+        setMessageType('error');
         setShowPopupMessage(true);
       }
     } catch (error) {
       console.error('Error returning item:', error);
       setPopupMessage('An error occurred while returning the item');
+      setMessageType('error');
       setShowPopupMessage(true);
     }
   };
@@ -232,6 +266,7 @@ const UserDashboard = () => {
     setViewBorrowedItems('active');
     setPopupMessage('');
     setShowPopupMessage(false);
+    setMessageType('success');
     fetchBorrowedItems('Active');
   };
 
@@ -240,6 +275,7 @@ const UserDashboard = () => {
     setViewBorrowedItems('history');
     setPopupMessage('');
     setShowPopupMessage(false);
+    setMessageType('success');
     fetchBorrowedItems('history');
   };
 
@@ -308,6 +344,7 @@ const UserDashboard = () => {
     // Ensure userID is available
     if (!userID) {
       setPopupMessage('User is not authenticated.');
+      setMessageType('error');
       setShowPopupMessage(true);
       return;
     }
@@ -336,6 +373,7 @@ const UserDashboard = () => {
 
       if (response.ok) {
         setPopupMessage('Payment successful! Your fines have been updated.');
+        setMessageType('success');
         setShowPopupMessage(true);
         setPaymentPopup(false);
         setPaymentAmount('');
@@ -344,11 +382,13 @@ const UserDashboard = () => {
         fetchUserInfo(); // Fetch updated balance and suspension status
       } else {
         setPopupMessage(data.message || 'Payment failed. Please try again.');
+        setMessageType('error');
         setShowPopupMessage(true);
       }
     } catch (error) {
       console.error('Error processing payment:', error);
       setPopupMessage('An error occurred while processing your payment.');
+      setMessageType('error');
       setShowPopupMessage(true);
     }
   };
@@ -365,6 +405,7 @@ const UserDashboard = () => {
   const closeMessagePopup = () => {
     setShowPopupMessage(false);
     setPopupMessage('');
+    setMessageType('success');
   };
 
   return (
@@ -381,7 +422,7 @@ const UserDashboard = () => {
         </div>
 
         {/* Pay Fine Button */}
-        {balance > 0 && !suspended && (
+        {balance > 0 && !suspended && !borrowLimitReached && (
           <div className="action-button-container">
             <button className="pay-fine-button" onClick={() => setPaymentPopup(true)}>
               Pay Fine
@@ -389,13 +430,21 @@ const UserDashboard = () => {
           </div>
         )}
 
-        {/* Suspended Status and Reactivate Account Button */}
-        {suspended && (
+        {/* Suspended Status and Borrow Limit Reached Message */}
+        {(suspended || borrowLimitReached) && (
           <div className="suspended-status">
-            <p className="suspended-text">Your account is <strong>Suspended</strong>.</p>
-            <button className="reactivate-button" onClick={() => setPaymentPopup(true)}>
-              Reactivate Account
-            </button>
+            {suspended ? (
+              <>
+                <p className="suspended-text">Your account is <strong>Suspended</strong>.</p>
+                <button className="reactivate-button" onClick={() => setPaymentPopup(true)}>
+                  Reactivate Account
+                </button>
+              </>
+            ) : (
+              <p className="suspended-text">
+                You have reached your borrow limit and cannot borrow any more books. Please return some items to borrow more.
+              </p>
+            )}
           </div>
         )}
 
@@ -460,7 +509,7 @@ const UserDashboard = () => {
         {/* Display success/error message popup */}
         {showPopupMessage && (
           <div className="message-popup">
-            <div className="message-content">
+            <div className={`message-content ${messageType === 'error' ? 'error' : 'success'}`}>
               <p>{popupMessage}</p>
               <button onClick={closeMessagePopup}>Close</button>
             </div>
@@ -478,13 +527,13 @@ const UserDashboard = () => {
           <button
             className={currentItemType === 'ItemBook' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemBook')}
-            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
+            disabled={suspended || borrowLimitReached}
             title={
               suspended
                 ? 'Cannot borrow while suspended'
-                : (borrowLimit !== null && activeBorrowCount >= borrowLimit
-                  ? 'Borrow limit reached'
-                  : 'Borrow Books')
+                : borrowLimitReached
+                  ? 'Borrow limit reached. Return items to borrow more.'
+                  : 'Borrow Books'
             }
           >
             Books
@@ -492,13 +541,13 @@ const UserDashboard = () => {
           <button
             className={currentItemType === 'ItemDevices' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemDevices')}
-            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
+            disabled={suspended || borrowLimitReached}
             title={
               suspended
                 ? 'Cannot borrow while suspended'
-                : (borrowLimit !== null && activeBorrowCount >= borrowLimit
-                  ? 'Borrow limit reached'
-                  : 'Borrow Devices')
+                : borrowLimitReached
+                  ? 'Borrow limit reached. Return items to borrow more.'
+                  : 'Borrow Devices'
             }
           >
             Devices
@@ -506,13 +555,13 @@ const UserDashboard = () => {
           <button
             className={currentItemType === 'ItemMagazine' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemMagazine')}
-            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
+            disabled={suspended || borrowLimitReached}
             title={
               suspended
                 ? 'Cannot borrow while suspended'
-                : (borrowLimit !== null && activeBorrowCount >= borrowLimit
-                  ? 'Borrow limit reached'
-                  : 'Borrow Magazines')
+                : borrowLimitReached
+                  ? 'Borrow limit reached. Return items to borrow more.'
+                  : 'Borrow Magazines'
             }
           >
             Magazines
@@ -520,13 +569,13 @@ const UserDashboard = () => {
           <button
             className={currentItemType === 'ItemMedia' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemMedia')}
-            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
+            disabled={suspended || borrowLimitReached}
             title={
               suspended
                 ? 'Cannot borrow while suspended'
-                : (borrowLimit !== null && activeBorrowCount >= borrowLimit
-                  ? 'Borrow limit reached'
-                  : 'Borrow Media')
+                : borrowLimitReached
+                  ? 'Borrow limit reached. Return items to borrow more.'
+                  : 'Borrow Media'
             }
           >
             Media
@@ -628,13 +677,13 @@ const UserDashboard = () => {
                     <td>
                       <button
                         onClick={() => borrowItem(item)}
-                        disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
+                        disabled={suspended || borrowLimitReached}
                         title={
                           suspended
                             ? 'Cannot borrow while suspended'
-                            : (borrowLimit !== null && activeBorrowCount >= borrowLimit
-                              ? 'Borrow limit reached'
-                              : 'Borrow this item')
+                            : borrowLimitReached
+                              ? 'Borrow limit reached. Return items to borrow more.'
+                              : 'Borrow this item'
                         }
                       >
                         Borrow
