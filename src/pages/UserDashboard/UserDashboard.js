@@ -1,5 +1,3 @@
-// File: UserDashboard.js
-
 import React, { useState, useEffect, useContext } from 'react';
 import './UserDashboard.css';
 import { useNavigate } from 'react-router-dom';
@@ -61,6 +59,7 @@ const UserDashboard = () => {
   const [popupMessage, setPopupMessage] = useState('');
   const [showPopupMessage, setShowPopupMessage] = useState(false);
 
+  // Fetch user information
   const fetchUserInfo = async () => {
     if (!userID) {
       // User is not logged in, redirect to login page
@@ -102,6 +101,7 @@ const UserDashboard = () => {
     }
   }, [userID, navigate]);
 
+  // Fetch available items based on the current item type
   const fetchItems = async (table) => {
     try {
       const response = await fetch(`/api/pullAPI?table=${table}&available=true`);
@@ -122,6 +122,7 @@ const UserDashboard = () => {
     }
   }, [currentItemType, userID, viewBorrowedItems]);
 
+  // Handle item type change
   const handleItemTypeChange = (itemType) => {
     setCurrentItemType(itemType);
     setViewBorrowedItems(false);
@@ -129,6 +130,7 @@ const UserDashboard = () => {
     setShowPopupMessage(false);
   };
 
+  // Borrow an item
   const borrowItem = async (item) => {
     if (suspended) {
       setPopupMessage('Your account is suspended. Please resolve outstanding fines to borrow items.');
@@ -188,6 +190,7 @@ const UserDashboard = () => {
     }
   };
 
+  // Return an item
   const returnItem = async (borrowRecordID) => {
     const confirmReturn = window.confirm('Are you sure you want to return this item?');
     if (!confirmReturn) {
@@ -224,6 +227,7 @@ const UserDashboard = () => {
     }
   };
 
+  // View active borrowed items
   const handleViewBorrowedItems = () => {
     setViewBorrowedItems('active');
     setPopupMessage('');
@@ -231,6 +235,7 @@ const UserDashboard = () => {
     fetchBorrowedItems('Active');
   };
 
+  // View borrow history
   const handleViewBorrowHistory = () => {
     setViewBorrowedItems('history');
     setPopupMessage('');
@@ -238,13 +243,19 @@ const UserDashboard = () => {
     fetchBorrowedItems('history');
   };
 
+  // Fetch borrowed items based on status
   const fetchBorrowedItems = async (status = 'active') => {
     try {
-      let url = `/api/getBorrowedItems?userID=${userID}`;
+      let url = `/api/getBorrowedItems?userID=${encodeURIComponent(userID)}`;
       if (status === 'Active') {
         url += '&status=Active';
       }
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-user-id': userID, // Include if the API expects it in headers
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch borrowed items');
       }
@@ -308,11 +319,12 @@ const UserDashboard = () => {
         paymentInfo,
       });
 
-      const response = await fetch('/api/reactivateAccount', {
+      // Pass userID as a query parameter to match the API's expectation
+      const response = await fetch(`/api/reactivateAccount?userID=${encodeURIComponent(userID)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userID, // Ensure userID is correctly sent in headers
+          // 'x-user-id': userID, // Remove if backend does not require it
         },
         body: JSON.stringify({
           paymentAmount: parseFloat(paymentAmount),
@@ -341,6 +353,7 @@ const UserDashboard = () => {
     }
   };
 
+  // Handle click outside the payment popup to close it
   const handlePopupClick = (e) => {
     if (e.target.className === 'payment-popup') {
       setPaymentPopup(false);
@@ -348,6 +361,7 @@ const UserDashboard = () => {
     }
   };
 
+  // Close the message popup
   const closeMessagePopup = () => {
     setShowPopupMessage(false);
     setPopupMessage('');
