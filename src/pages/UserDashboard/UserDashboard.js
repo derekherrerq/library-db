@@ -1,3 +1,5 @@
+// File: UserDashboard.js
+
 import React, { useState, useEffect, useContext } from 'react';
 import './UserDashboard.css';
 import { useNavigate } from 'react-router-dom';
@@ -46,15 +48,19 @@ const UserDashboard = () => {
   const [currentItemType, setCurrentItemType] = useState('ItemBook');
   const [balance, setBalance] = useState(null);
   const [suspended, setSuspended] = useState(false); // New state for suspension
-  const [message, setMessage] = useState('');
   const [viewBorrowedItems, setViewBorrowedItems] = useState(false); // false, 'active', or 'history'
   const [borrowedItems, setBorrowedItems] = useState([]);
-
-  // New state variables for borrow limit and active borrow count
   const [borrowLimit, setBorrowLimit] = useState(null);
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
 
-  // Define fetchBalance and fetchUserInfo at the component level so they can be accessed by other functions
+  // New state for payment popup and messages
+  const [paymentPopup, setPaymentPopup] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentInfo, setPaymentInfo] = useState({ cardNumber: '', expiryDate: '', cvv: '' });
+  const [paymentErrors, setPaymentErrors] = useState({});
+  const [popupMessage, setPopupMessage] = useState('');
+  const [showPopupMessage, setShowPopupMessage] = useState(false);
+
   const fetchUserInfo = async () => {
     if (!userID) {
       // User is not logged in, redirect to login page
@@ -63,7 +69,8 @@ const UserDashboard = () => {
     }
 
     try {
-      const response = await fetch('/api/getUserInfo', { // Merged API endpoint
+      console.log('Fetching user info with userID:', userID);
+      const response = await fetch('/api/getUserInfo', {
         method: 'GET',
         headers: {
           'x-user-id': userID, // Send userID in custom header
@@ -79,22 +86,22 @@ const UserDashboard = () => {
         setBorrowLimit(data.borrowLimit);
         setActiveBorrowCount(data.activeBorrowCount);
       } else {
-        setMessage(data.message || 'Failed to fetch user info');
+        setPopupMessage(data.message || 'Failed to fetch user info');
+        setShowPopupMessage(true);
       }
     } catch (error) {
       console.error('Error fetching user info:', error);
-      setMessage('An error occurred while fetching user info');
+      setPopupMessage('An error occurred while fetching user info');
+      setShowPopupMessage(true);
     }
   };
 
-  // Fetch the user's info when the component mounts or when userID changes
   useEffect(() => {
     if (userID) {
       fetchUserInfo();
     }
   }, [userID, navigate]);
 
-  // Function to fetch available items based on the current item type
   const fetchItems = async (table) => {
     try {
       const response = await fetch(`/api/pullAPI?table=${table}&available=true`);
@@ -102,7 +109,6 @@ const UserDashboard = () => {
         throw new Error(`Failed to fetch ${table} data`);
       }
       const data = await response.json();
-      console.log(`Fetched ${table} data:`, data);
       setItemsData(data);
     } catch (error) {
       console.error('Error:', error);
@@ -110,34 +116,32 @@ const UserDashboard = () => {
     }
   };
 
-  // Fetch items when the currentItemType changes
   useEffect(() => {
-    if (userID && !viewBorrowedItems) { // Ensure userID is available and not viewing borrowed items
+    if (userID && !viewBorrowedItems) {
       fetchItems(currentItemType);
     }
   }, [currentItemType, userID, viewBorrowedItems]);
 
-  // Handle changing the item type (Books, Devices, etc.)
   const handleItemTypeChange = (itemType) => {
     setCurrentItemType(itemType);
     setViewBorrowedItems(false);
-    setMessage('');
+    setPopupMessage('');
+    setShowPopupMessage(false);
   };
 
-  // Function to borrow an item
   const borrowItem = async (item) => {
     if (suspended) {
-      setMessage('Your account is suspended. Please resolve outstanding fines to borrow items.');
+      setPopupMessage('Your account is suspended. Please resolve outstanding fines to borrow items.');
+      setShowPopupMessage(true);
       return;
     }
 
-    // Check if user has reached their borrow limit
     if (borrowLimit !== null && activeBorrowCount >= borrowLimit) {
-      setMessage(`You have reached your borrow limit of ${borrowLimit} items.`);
+      setPopupMessage(`You have reached your borrow limit of ${borrowLimit} items.`);
+      setShowPopupMessage(true);
       return;
     }
 
-    // Confirmation dialog
     const confirmBorrow = window.confirm(`Do you want to borrow "${item.Title || item.Name || 'this item'}"?`);
     if (!confirmBorrow) {
       return;
@@ -148,9 +152,8 @@ const UserDashboard = () => {
         userID: userID,
       };
 
-      // Determine the correct item ID key based on the current item type
       if (currentItemType === 'ItemBook') {
-        borrowData.bookISBN = item['ISBN']; // Use ISBN instead of BookID
+        borrowData.bookISBN = item['ISBN'];
       } else if (currentItemType === 'ItemDevices') {
         borrowData.deviceID = item['DeviceID'];
       } else if (currentItemType === 'ItemMagazine') {
@@ -168,31 +171,24 @@ const UserDashboard = () => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('Borrowed item successfully:', result);
-        setMessage('Item borrowed successfully!');
-        // Update active borrow count
-        setActiveBorrowCount(prevCount => prevCount + 1);
-        // Refresh items and balance after borrowing
+        setPopupMessage('Item borrowed successfully!');
+        setShowPopupMessage(true);
+        setActiveBorrowCount((prevCount) => prevCount + 1);
         fetchItems(currentItemType);
         fetchBorrowedItems(viewBorrowedItems);
-        fetchUserInfo(); // Refresh user info to ensure consistency
+        fetchUserInfo();
       } else {
-        // Handle specific error messages from the backend
-        if (result.message.includes('borrow limit')) {
-          setMessage(result.message);
-        } else {
-          setMessage(result.message || 'Failed to borrow item');
-        }
+        setPopupMessage(result.message || 'Failed to borrow item');
+        setShowPopupMessage(true);
       }
     } catch (error) {
       console.error('Error borrowing item:', error);
-      setMessage('An error occurred while borrowing the item');
+      setPopupMessage('An error occurred while borrowing the item');
+      setShowPopupMessage(true);
     }
   };
 
-  // Function to return an item
   const returnItem = async (borrowRecordID) => {
-    // Confirmation dialog
     const confirmReturn = window.confirm('Are you sure you want to return this item?');
     if (!confirmReturn) {
       return;
@@ -212,45 +208,42 @@ const UserDashboard = () => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('Returned item successfully:', result);
-        setMessage('Item returned successfully!');
-        // Update active borrow count
-        setActiveBorrowCount(prevCount => Math.max(prevCount - 1, 0));
-        // Refresh borrowed items and balance after returning
+        setPopupMessage('Item returned successfully!');
+        setShowPopupMessage(true);
+        setActiveBorrowCount((prevCount) => Math.max(prevCount - 1, 0));
         fetchBorrowedItems(viewBorrowedItems);
-        fetchUserInfo(); // Refresh user info to ensure consistency
+        fetchUserInfo();
       } else {
-        // Handle specific error messages from the backend
-        setMessage(result.message || 'Failed to return item');
+        setPopupMessage(result.message || 'Failed to return item');
+        setShowPopupMessage(true);
       }
     } catch (error) {
       console.error('Error returning item:', error);
-      setMessage('An error occurred while returning the item');
+      setPopupMessage('An error occurred while returning the item');
+      setShowPopupMessage(true);
     }
   };
 
-  // Function to view borrowed items
   const handleViewBorrowedItems = () => {
     setViewBorrowedItems('active');
-    setMessage('');
-    fetchBorrowedItems('Active'); // Updated to 'Active'
+    setPopupMessage('');
+    setShowPopupMessage(false);
+    fetchBorrowedItems('Active');
   };
 
-  // Function to view borrow history
   const handleViewBorrowHistory = () => {
     setViewBorrowedItems('history');
-    setMessage('');
-    fetchBorrowedItems('history'); // Pass 'history' to fetch all records
+    setPopupMessage('');
+    setShowPopupMessage(false);
+    fetchBorrowedItems('history');
   };
 
-  // Function to fetch borrowed items for the user
   const fetchBorrowedItems = async (status = 'active') => {
     try {
       let url = `/api/getBorrowedItems?userID=${userID}`;
-      if (status === 'Active') { // Updated to 'Active'
+      if (status === 'Active') {
         url += '&status=Active';
       }
-      // If status is 'history', fetch all borrowed items regardless of status
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch borrowed items');
@@ -263,33 +256,191 @@ const UserDashboard = () => {
     }
   };
 
-  // Define a filtered list based on the current view
   const displayedBorrowedItems = viewBorrowedItems === 'active'
-    ? borrowedItems.filter(item => item.Status === 'Active')
+    ? borrowedItems.filter((item) => item.Status === 'Active')
     : borrowedItems;
+
+  // Updated handlePayment function
+  const handlePayment = async () => {
+    const errors = {};
+
+    // Validate payment amount
+    if (!paymentAmount || isNaN(paymentAmount) || parseFloat(paymentAmount) <= 0) {
+      errors.paymentAmount = 'Please enter a valid payment amount.';
+    }
+
+    // Validate card number (16 digits)
+    const cardNumberRegex = /^\d{16}$/;
+    if (!cardNumberRegex.test(paymentInfo.cardNumber)) {
+      errors.cardNumber = 'Please enter a valid 16-digit card number.';
+    }
+
+    // Validate expiry date (MM/YY format)
+    const expiryDateRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+    if (!expiryDateRegex.test(paymentInfo.expiryDate)) {
+      errors.expiryDate = 'Please enter a valid expiry date in MM/YY format.';
+    }
+
+    // Validate CVV (3 or 4 digits)
+    const cvvRegex = /^\d{3,4}$/;
+    if (!cvvRegex.test(paymentInfo.cvv)) {
+      errors.cvv = 'Please enter a valid 3 or 4-digit CVV.';
+    }
+
+    setPaymentErrors(errors);
+
+    // If there are errors, do not proceed
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    // Ensure userID is available
+    if (!userID) {
+      setPopupMessage('User is not authenticated.');
+      setShowPopupMessage(true);
+      return;
+    }
+
+    try {
+      console.log('Submitting payment with the following details:', {
+        userID,
+        paymentAmount: parseFloat(paymentAmount),
+        paymentInfo,
+      });
+
+      const response = await fetch('/api/reactivateAccount', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userID, // Ensure userID is correctly sent in headers
+        },
+        body: JSON.stringify({
+          paymentAmount: parseFloat(paymentAmount),
+          // paymentInfo, // Remove if backend does not require it
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPopupMessage('Payment successful! Your account has been reactivated.');
+        setShowPopupMessage(true);
+        setPaymentPopup(false);
+        setPaymentAmount('');
+        setPaymentInfo({ cardNumber: '', expiryDate: '', cvv: '' });
+        setPaymentErrors({});
+        fetchUserInfo(); // Fetch updated balance and suspension status
+      } else {
+        setPopupMessage(data.message || 'Payment failed. Please try again.');
+        setShowPopupMessage(true);
+      }
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      setPopupMessage('An error occurred while processing your payment.');
+      setShowPopupMessage(true);
+    }
+  };
+
+  const handlePopupClick = (e) => {
+    if (e.target.className === 'payment-popup') {
+      setPaymentPopup(false);
+      setPaymentErrors({});
+    }
+  };
+
+  const closeMessagePopup = () => {
+    setShowPopupMessage(false);
+    setPopupMessage('');
+  };
 
   return (
     <div className="dashboard-container">
       <div className="dashboard-content">
         <h1>User Dashboard</h1>
 
-        {/* Display the user's balance */}
         <div className="balance-container">
           {balance !== null ? (
-            <p>Fines: ${balance.toFixed(2)}</p>
+            <p>Fines: ${parseFloat(balance).toFixed(2)}</p>
           ) : (
             <p>Loading balance...</p>
           )}
         </div>
 
-        {/* Display suspension status if suspended */}
         {suspended && (
           <div className="suspended-status">
             <p className="suspended-text">Your account is <strong>Suspended</strong>.</p>
+            <button onClick={() => setPaymentPopup(true)}>Reactivate Account</button>
           </div>
         )}
 
-        {/* Display borrow limit and active borrow count */}
+        {/* Display payment popup */}
+        {paymentPopup && (
+          <div className="payment-popup" onClick={handlePopupClick}>
+            <div className="popup-content">
+              <h2>Make a Payment</h2>
+              <label>
+                Card Number:
+                <input
+                  type="text"
+                  value={paymentInfo.cardNumber}
+                  onChange={(e) => setPaymentInfo({ ...paymentInfo, cardNumber: e.target.value })}
+                  placeholder="Enter 16-digit card number"
+                  maxLength="16"
+                />
+                {paymentErrors.cardNumber && <span className="error">{paymentErrors.cardNumber}</span>}
+              </label>
+              <label>
+                Expiry Date (MM/YY):
+                <input
+                  type="text"
+                  value={paymentInfo.expiryDate}
+                  onChange={(e) => setPaymentInfo({ ...paymentInfo, expiryDate: e.target.value })}
+                  placeholder="MM/YY"
+                  maxLength="5"
+                />
+                {paymentErrors.expiryDate && <span className="error">{paymentErrors.expiryDate}</span>}
+              </label>
+              <label>
+                CVV:
+                <input
+                  type="text"
+                  value={paymentInfo.cvv}
+                  onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value })}
+                  placeholder="3 or 4-digit CVV"
+                  maxLength="4"
+                />
+                {paymentErrors.cvv && <span className="error">{paymentErrors.cvv}</span>}
+              </label>
+              <label>
+                Payment Amount:
+                <input
+                  type="number"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  min="0.01"
+                  step="0.01"
+                />
+                {paymentErrors.paymentAmount && <span className="error">{paymentErrors.paymentAmount}</span>}
+              </label>
+              <div className="popup-buttons">
+                <button onClick={handlePayment}>Submit Payment</button>
+                <button onClick={() => setPaymentPopup(false)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Display success/error message popup */}
+        {showPopupMessage && (
+          <div className="message-popup">
+            <div className="message-content">
+              <p>{popupMessage}</p>
+              <button onClick={closeMessagePopup}>Close</button>
+            </div>
+          </div>
+        )}
+
         {borrowLimit !== null && (
           <div className="borrow-limit-container">
             <p>Borrow Limit: {borrowLimit}</p>
@@ -297,15 +448,11 @@ const UserDashboard = () => {
           </div>
         )}
 
-        {/* Display any messages */}
-        {message && <p className="message">{message}</p>}
-
-        {/* Buttons to select the item type and view borrowed items/history */}
         <div className="button-group">
           <button
             className={currentItemType === 'ItemBook' ? 'active' : ''}
             onClick={() => handleItemTypeChange('ItemBook')}
-            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)} // Disable if suspended or limit reached
+            disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
             title={
               suspended
                 ? 'Cannot borrow while suspended'
@@ -358,7 +505,6 @@ const UserDashboard = () => {
           >
             Media
           </button>
-          {/* New buttons for borrowed items and history */}
           <button
             className={viewBorrowedItems === 'active' ? 'active' : ''}
             onClick={handleViewBorrowedItems}
@@ -373,15 +519,7 @@ const UserDashboard = () => {
           </button>
         </div>
 
-        {/* Inform the user if they are suspended and attempting to borrow */}
-        {suspended && (
-          <div className="suspension-warning">
-            <p>Please settle your outstanding fines to reactivate your account.</p>
-          </div>
-        )}
-
         {viewBorrowedItems === 'active' || viewBorrowedItems === 'history' ? (
-          // Render borrowed items or borrow history
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -423,7 +561,7 @@ const UserDashboard = () => {
                 ) : (
                   <tr>
                     <td colSpan={viewBorrowedItems === 'history' ? '8' : '7'}>
-                      No {viewBorrowedItems === 'history' ? 'borrow history' : 'active borrowed'} found.
+                      No {viewBorrowedItems === 'history' ? 'borrow history' : 'active borrowed items'} found.
                     </td>
                   </tr>
                 )}
@@ -431,7 +569,6 @@ const UserDashboard = () => {
             </table>
           </div>
         ) : itemsData.length > 0 ? (
-          // Render available items and borrow button
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -465,7 +602,7 @@ const UserDashboard = () => {
                     <td>
                       <button
                         onClick={() => borrowItem(item)}
-                        disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)} // Disable if suspended or limit reached
+                        disabled={suspended || (borrowLimit !== null && activeBorrowCount >= borrowLimit)}
                         title={
                           suspended
                             ? 'Cannot borrow while suspended'

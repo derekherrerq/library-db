@@ -17,6 +17,7 @@ export default async function handler(req, res) {
       SELECT BookISBN, DeviceID, MagID, MediaID, NotificationStatus
       FROM BorrowRecord
       WHERE NotificationStatus IN ('due_soon', 'overdue')
+        AND Status = 'Active'
     `);
 
     const notifications = rows.map(row => ({
