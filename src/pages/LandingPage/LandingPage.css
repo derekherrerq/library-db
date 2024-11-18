@@ -119,7 +119,8 @@
   .landing-button {
     font-size: 0.9em;
     padding: 10px 20px;
-  }
+    margin-top: 20px;
+}
 }
 
 

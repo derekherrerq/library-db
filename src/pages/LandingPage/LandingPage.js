@@ -26,11 +26,11 @@ const LandingPage = () => {
           Discover, borrow, and manage resources effortlessly. Your digital gateway to an expansive world of books, magazines, devices, and media.
         </p>
         {isAuthenticated ? (
-          <button className="cta-button" onClick={handleLogoutClick}>
+          <button className="landing-button" onClick={handleLogoutClick}>
             Logout
           </button>
         ) : (
-          <button className="cta-button" onClick={handleLoginClick}>
+          <button className="landing-button" onClick={handleLoginClick}>
             Login
           </button>
         )}
